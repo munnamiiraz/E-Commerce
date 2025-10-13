@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import { 
   User, 
   ShoppingBag, 
@@ -22,22 +22,77 @@ import {
   Crown,
   Zap
 } from 'lucide-react';
+import axios from 'axios';
+import toast from "react-hot-toast"
+import {images} from '../asset/asset.js'
+import { useRouter } from 'next/navigation';
+
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null
+  cover: string | null;
+  points: number
+  totalOrders: number
+  totalReviews: number
+  designation: string
+  createdAt: Date
+}
+
 
 const MyProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wishlist'>('overview');
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter()
 
-  // User Data
-  const userData = {
-    name: 'Md. Mahedi Hassan',
-    email: 'munnamiiraz@gmail.com',
-    phone: '+880 1712-345678',
-    joinDate: 'January 2023',
-    location: 'Sylhet, Bangladesh',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&h=400&fit=crop',
-    membershipTier: 'Gold Member',
-    points: 2450
-  };
+  const getUserData = async () => {
+    try {
+      if(!token) {
+        toast.error("Please login")
+        router.push("/login")
+        return
+      }
+      const data: UserData = await axios.get(process.env.PORT + "api/user/get-profile")
+      console.log(data)
+      if(!data) {
+        toast.error("Something went wrong")
+        router.push("/")
+        return
+      }
+      setUserData(data)
+    } catch (error) {
+      toast.error("Something went wrong")
+      router.push("/")
+      return
+    }
+  }
+
+  const getToken = async () => {
+    try {
+      const data: string | null = localStorage.getItem("token")
+    } catch{
+      toast.error("Something went wrong")
+      router.push("/")
+      return
+    }
+  }
+
+  useEffect(() => {
+    getToken()
+
+    getUserData()
+  }, [])
+
+
 
   // Stats
   const stats = [
@@ -195,7 +250,7 @@ const MyProfile: React.FC = () => {
               {/* Avatar */}
               <div className="relative group">
                 <div className="w-40 h-40 rounded-3xl overflow-hidden ring-8 ring-white shadow-2xl">
-                  <img src={userData.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={userData?.avatarUrl ?? "/images/default-avatar.png"} alt="Profile" className="w-full h-full object-cover" />
                 </div>
                 <button className="absolute bottom-2 right-2 w-12 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                   <Camera className="w-5 h-5 text-white" />
@@ -205,10 +260,10 @@ const MyProfile: React.FC = () => {
               {/* User Details */}
               <div className="flex-1 mt-6 md:mt-0">
                 <div className="flex mt-[100px] items-center space-x-3 mb-2">
-                  <h1 className="text-3xl font-bold text-gray-900">{userData.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">{userData?.name}</h1>
                   <div className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center space-x-1 shadow-lg">
                     <Crown className="w-4 h-4 text-white" />
-                    <span className="text-sm font-bold text-white">{userData.membershipTier}</span>
+                    <span className="text-sm font-bold text-white">{userData?.designation}</span>
                   </div>
                 </div>
                 
@@ -219,7 +274,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Email</p>
-                      <p className="text-sm font-medium">{userData.email}</p>
+                      <p className="text-sm font-medium">{userData?.email}</p>
                     </div>
                   </div>
                   
@@ -229,7 +284,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Phone</p>
-                      <p className="text-sm font-medium">{userData.phone}</p>
+                      <p className="text-sm font-medium">{userData?.phone || 'Set Phone Number'}</p>
                     </div>
                   </div>
                   
@@ -239,7 +294,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Location</p>
-                      <p className="text-sm font-medium">{userData.location}</p>
+                      <p className="text-sm font-medium">{userData?.address || 'Set Location'}</p>
                     </div>
                   </div>
                 </div>
@@ -251,8 +306,8 @@ const MyProfile: React.FC = () => {
                   <Zap className="w-5 h-5" />
                   <p className="text-sm opacity-90">Reward Points</p>
                 </div>
-                <p className="text-4xl font-bold">{userData.points}</p>
-                <p className="text-xs opacity-75 mt-1">Member since {userData.joinDate}</p>
+                <p className="text-4xl font-bold">{userData?.points}</p>
+                <p className="text-xs opacity-75 mt-1">Member since {userData?.createdAt.toLocaleDateString()}</p>
               </div>
             </div>
           </div>

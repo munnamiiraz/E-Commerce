@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  // output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -24,7 +24,6 @@ model User {
   cover        String?
   phone        String?
   address      String?
-  currentRating String?
   points       Int?            @default(0)
   totalOrders  Int?            @default(0)
   totalReviews Int?            @default(0)

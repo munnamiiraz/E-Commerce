@@ -2,11 +2,11 @@ import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-import connectDB from './config/prisma';
+import { connectDB } from './config/prisma';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 import userRoutes from './routes/user.routes';
-import authRoutes from './routes/auth.routes';
+// import authRoutes from './routes/auth.routes';
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 
 // Error handling
@@ -41,5 +41,6 @@ const startServer = async (): Promise<void> => {
     process.exit(1);
   }
 };
+
 
 startServer().catch(console.error);
