@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
+import Link from 'next/link';
 
 interface Product {
   id: number;
@@ -157,6 +158,8 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
   };
 
   const ProductCard = ({ product }: { product: Product }) => (
+    <Link href={`/product/${product.id}`}>
+
     <div className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
       {/* Image Container */}
       <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
@@ -236,6 +239,7 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
         </button>
       </div>
     </div>
+    </Link>
   );
 
   return (
@@ -261,7 +265,8 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {latestProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} />
+              
             ))}
           </div>
         </div>

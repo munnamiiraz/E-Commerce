@@ -56,19 +56,26 @@ const MyProfile: React.FC = () => {
 
   const getUserData = async () => {
     try {
+      console.log(token);
+      
       if(!token) {
         toast.error("Please login")
         router.push("/login")
         return
       }
-      const data: UserData = await axios.get(process.env.PORT + "api/user/get-profile")
-      console.log(data)
-      if(!data) {
+      const data = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/get-profile", {headers: {token}})
+      const user: UserData = data.data.data
+      console.log(user);
+      
+      if(!user) {
         toast.error("Something went wrong")
         router.push("/")
         return
       }
-      setUserData(data)
+      setUserData(user)
+      console.log(user);
+      
+      setLoading(false)
     } catch (error) {
       toast.error("Something went wrong")
       router.push("/")
@@ -78,19 +85,25 @@ const MyProfile: React.FC = () => {
 
   const getToken = async () => {
     try {
-      const data: string | null = localStorage.getItem("token")
+      const token: string | null = await localStorage.getItem("token")
+      setToken(token)
+      // console.log(token);
+      
     } catch{
       toast.error("Something went wrong")
       router.push("/")
-      return
     }
   }
 
   useEffect(() => {
     getToken()
-
-    getUserData()
   }, [])
+
+  useEffect(() => {
+    if (token) {
+      getUserData()
+    }
+  }, [token])
 
 
 
@@ -307,7 +320,8 @@ const MyProfile: React.FC = () => {
                   <p className="text-sm opacity-90">Reward Points</p>
                 </div>
                 <p className="text-4xl font-bold">{userData?.points}</p>
-                <p className="text-xs opacity-75 mt-1">Member since {userData?.createdAt.toLocaleDateString()}</p>
+                
+                {/* <p className="text-xs opacity-75 mt-1">Member since {userData?.createdAt?. || 'N/A'}</p> */}
               </div>
             </div>
           </div>
@@ -325,7 +339,7 @@ const MyProfile: React.FC = () => {
                   {stat.change}
                 </span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-1">{userData?.totalOrders}</h3>
               <p className="text-gray-600 text-sm">{stat.label}</p>
             </div>
           ))}

@@ -18,18 +18,13 @@ import {
   Store,
   ChevronDown
 } from 'lucide-react';
+import axios from "axios"
 
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
+import toast from 'react-hot-toast';
 
-interface NavbarProps {
-  className?: string;
-  isLoggedIn?: boolean;
-  user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-}
+
 
 
 interface NavLinkProps {
@@ -37,18 +32,26 @@ interface NavLinkProps {
   href: string;
 }
 
+interface IUser {
+  name: string,
+  email: string,
+  avatarUrl: string | null
+  address: string | null,
+  cover: string | null
+  createdAt: Date
+  designation: string | null
+  phone: string | null,
+  id: string
+  points: number,
+  totalOrders: number | null,
+  totalReviews: number
+}
 
 
-
-const Navbar: React.FC<NavbarProps> = ({
-  className = '', 
-  isLoggedIn = true,
-  user = {
-    name: 'Md. Mahedi Hassan',
-    email: 'munnamiiraz@gmail.com'
-  }
-}) => {
+const Navbar: React.FC = () => {
   const [activeLink, setActiveLink] = useState<string>('Shop');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [user, setUser] = useState<IUser | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState<boolean>(false);
@@ -80,7 +83,7 @@ const Navbar: React.FC<NavbarProps> = ({
     { icon: UserPlus, label: 'Add Another Account', href: "/sign-in"},
     { icon: Store, label: 'Add Seller Account', href: "/seller/sign-in"},
     { divider: true },
-    { icon: LogOut, label: 'Sign Out', action: () => console.log('Sign Out'), danger: true },
+    { icon: LogOut, label: 'Sign Out', action: () => signOutHandeler(), danger: true },
   ];
 
   const notifications = [
@@ -88,6 +91,10 @@ const Navbar: React.FC<NavbarProps> = ({
     { id: 2, title: 'New Message', message: 'You have a new message from seller', time: '1h ago', unread: true },
     { id: 3, title: 'Price Drop', message: 'Item in your wishlist is now 20% off', time: '3h ago', unread: false },
   ];
+
+  const signOutHandeler = () => {
+    localStorage.removeItem('token')
+  }
 
   const handleLinkClick = (link: string): void => {
     setActiveLink(link);
@@ -99,6 +106,29 @@ const Navbar: React.FC<NavbarProps> = ({
   const handleCartHandeler = () => {
     router.push('/cart');
   }
+
+  useEffect(() => {
+    const token: string | null = localStorage.getItem('token');
+    console.log(token);
+
+    const getUserData = async () => {
+      if (token) {
+        setIsLoggedIn(true);
+        
+        try {
+          const data = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/get-profile", {headers: {token}})
+          setUser(data.data.data)
+        } catch (error) {
+          toast.error("something went wrong")
+          console.log(error);
+          
+        }
+      } else {
+        setIsLoggedIn(false);
+      }
+    }
+    getUserData();
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -114,8 +144,11 @@ const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  console.log(user);
+  
+
   return (
-    <nav className={`bg-white shadow-md sticky h-[80px] top-0 z-50 ${className}`}>
+    <nav className={`bg-white shadow-md sticky h-[80px] top-0 z-50`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -246,7 +279,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-all duration-200 group"
                 >
                   <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ring-2 ring-white">
-                    {user.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                    {user?.name}
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -258,11 +291,11 @@ const Navbar: React.FC<NavbarProps> = ({
                     <div className="px-5 py-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                       <div className="flex items-center space-x-3">
                         <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ring-4 ring-white/30">
-                          {user.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          {user?.avatarUrl}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-base truncate">{user.name}</h3>
-                          <p className="text-sm text-emerald-50 truncate">{user.email}</p>
+                          <h3 className="font-bold text-base truncate">{user?.name}</h3>
+                          <p className="text-sm text-emerald-50 truncate">{user?.email}</p>
                         </div>
                       </div>
                     </div>
@@ -292,9 +325,11 @@ const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
             ) : (
-              <button className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200">
-                Sign In
-              </button>
+              <Link href="/login">
+                <button className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200">
+                  Sign In
+                </button>
+              </Link>
             )}
           </div>
 
@@ -320,11 +355,11 @@ const Navbar: React.FC<NavbarProps> = ({
             {isLoggedIn && (
               <div className="flex items-center space-x-3 p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white mb-4">
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-bold">
-                  {user.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                  {user?.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-sm truncate">{user.name}</h3>
-                  <p className="text-xs text-emerald-50 truncate">{user.email}</p>
+                  <h3 className="font-bold text-sm truncate">{user?.name}</h3>
+                  <p className="text-xs text-emerald-50 truncate">{user?.email}</p>
                 </div>
               </div>
             )}

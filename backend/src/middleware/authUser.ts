@@ -1,56 +1,45 @@
-// import { Request, Response, NextFunction } from 'express';
-// import { verifyToken } from '../config/jwt';
+import { ApiError } from "../utils/ApiError";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-// // Extend Express Request type to include user
-// declare global {
-//   namespace Express {
-//     interface Request {
-//       user?: any;
-//       token?: string;
-//     }
-//   }
-// }
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any; // replace 'any' with a more specific type
+    }
+  }
+}
 
-// export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//   try {
-//     // 1) Get token from header
-//     const authHeader = req.headers.authorization;
-//     let token: string | undefined;
+const authUser = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const tokenHeader: string | undefined = (req.headers['token']) as string;
+    let token: string | null = null;
 
-//     if (authHeader && authHeader.startsWith('Bearer')) {
-//       token = authHeader.split(' ')[1];
-//     }
+    if (tokenHeader) {
+      token = tokenHeader;
+    } 
 
-//     if (!token) {
-//       res.status(401).json({ message: 'You are not logged in. Please log in to get access.' });
-//       return;
-//     }
+    if (!token) {
+      res.status(401).json(new ApiError(401, "Unauthorized: No token provided"));
+      return;
+    }
 
-//     // 2) Verify token
-//     const decoded = verifyToken(token);
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    console.log("Decoded token from authUser:", decoded);
 
-//     // 3) Check if user still exists
-//     const user = await User.findById(decoded.userId);
-//     if (!user) {
-//       res.status(401).json({ message: 'The user belonging to this token no longer exists.' });
-//       return;
-//     }
+    if (!decoded) {
+      res.status(401).json(new ApiError(401, "Unauthorized: Invalid token"));
+      return;
+    }
 
-//     // 4) Grant access to protected route
-//     req.user = user;
-//     req.token = token;
-//     next();
-//   } catch (error) {
-//     res.status(401).json({ message: 'Invalid token. Please log in again.' });
-//   }
-// };
+    req.user = decoded; // important to know
+    next();
+  } catch (error: any) {
+    console.error("authUser error:", error.message);
+    res.status(401).json(new ApiError(401, "Unauthorized: Invalid token"));
+    return;
+  }
+};
 
-// export const restrictTo = (...roles: string[]) => {
-//   return (req: Request, res: Response, next: NextFunction) => {
-//     if (!roles.includes(req.user.role)) {
-//       res.status(403).json({ message: 'You do not have permission to perform this action' });
-//       return;
-//     }
-//     next();
-//   };
-// };
+export default authUser;

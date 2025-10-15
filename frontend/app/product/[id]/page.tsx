@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import { 
   Heart, 
   Share2, 
@@ -16,12 +16,15 @@ import {
   Store,
   ArrowRight
 } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
 const ProductPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'specifications'>('description');
+  const {id} = useParams();
 
   const images = [
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop',
@@ -217,10 +220,11 @@ const ProductPage: React.FC = () => {
                 <ShoppingCart className="w-6 h-6" />
                 <span>Add to Cart</span>
               </button>
-              
-              <button className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-bold text-lg hover:bg-emerald-50 transition-all duration-300">
-                Buy Now
-              </button>
+              <Link href={`/product/${id}/buynow`}>
+                <button className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 rounded-xl font-bold text-lg hover:bg-emerald-50 transition-all duration-300">
+                  Buy Now
+                </button>
+              </Link>
             </div>
 
             {/* Seller Info */}
@@ -283,6 +287,7 @@ const ProductPage: React.FC = () => {
             {activeTab === 'reviews' && (
               <div className="space-y-6">
                 {reviews.map((review) => (
+                
                   <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
                     <div className="flex items-start justify-between mb-3">
                       <div>

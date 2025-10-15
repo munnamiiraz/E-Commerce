@@ -7,7 +7,7 @@ interface UploadResponse {
 
 export const uploadToCloudinary = async (
   file: Express.Multer.File,
-  folder: string = 'uploads'
+  folder: string = 'E-commerce-gocart'
 ): Promise<UploadResponse> => {
   try {
     const result = await cloudinary.uploader.upload(file.path, {
