@@ -126,7 +126,7 @@ export default function SellerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 ${sidebarOpen ? 'ml-75' : 'ml-20'} transition-all duration-300`}>
+      <main className={`flex-1 ${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300`}>
         {activeSection === 'dashboard' && <DashboardSection />}
         {activeSection === 'products' && <ProductSection />}
         {activeSection === 'orders' && <OrderSection />}

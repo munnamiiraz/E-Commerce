@@ -47,7 +47,7 @@ model Seller {
   cover         String?
   phone         String?
   address       String?
-  rating        String?
+  rating        Float?          @default(0)
   totalRevenue  Int            @default(0)
   totalOrders   Int            @default(0)
   totalProducts Int            @default(0)
