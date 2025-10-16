@@ -2,6 +2,9 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Store, Mail, Lock, User, Phone, MapPin, FileText } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
+
+import { useRouter } from 'next/navigation';
 
 interface RegisterData {
   name: string;
@@ -12,9 +15,40 @@ interface RegisterData {
   description: string;
 }
 
+interface IUser {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  cover: string | null;
+  phone: string;
+  address: string;
+  rating: number;
+  totalRevenue: number;
+  totalOrders: number;
+  totalProducts: number;
+  totalReviews: number;
+  designation: string;
+  description: string;
+  createdAt: string;
+}
+
+
 interface LoginData {
   email: string;
   password: string;
+}
+
+interface IResponce {
+  statusCode: number,
+  data: {
+    data: {
+      user: IUser,
+      token: string
+    }
+  },
+  message: string,
+  success: boolean
 }
 
 export default function SellerAuth() {
@@ -23,6 +57,8 @@ export default function SellerAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const router = useRouter()
 
   const [registerData, setRegisterData] = useState<RegisterData>({
     name: '',
@@ -60,25 +96,16 @@ export default function SellerAuth() {
     setError('');
     setSuccess('');
 
+    console.log(registerData);
+    
     try {
-      const response = await fetch('/api/seller/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registerData),
-      });
 
-      const data = await response.json();
+      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/sign-up', registerData)
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      const token = data.token;
-      sessionStorage.setItem('sToken', token);
+      console.log(response);
       
-      setSuccess('Registration successful! Redirecting...');
+      
+      setSuccess('Registration successful! Login to continue...');
       setRegisterData({
         name: '',
         email: '',
@@ -88,9 +115,8 @@ export default function SellerAuth() {
         description: ''
       });
       
-      setTimeout(() => {
-        window.location.href = '/seller/dashboard';
-      }, 1500);
+      toast.success("Seller account created successfully, Login to continue")
+      setIsLogin(true)
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -105,34 +131,31 @@ export default function SellerAuth() {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/seller/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginData),
-      });
 
-      const data = await response.json();
+      const response: IResponce = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/sign-in', loginData)
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      console.log(response);
+      
+
+      if (response.success === false) {
+        throw new Error(response.message || 'Login failed');
       }
 
-      const token = data.token;
-      sessionStorage.setItem('sToken', token);
+      const token = response.data.data.token;
+      await localStorage.setItem('sToken', token);
+      toast.success('Seller login successful')
+      
       
       setSuccess('Login successful! Redirecting...');
       setLoginData({
         email: '',
         password: ''
       });
+      router.push('/seller')
       
-      setTimeout(() => {
-        window.location.href = '/seller/dashboard';
-      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
+      toast.error("something went wrong")
     } finally {
       setLoading(false);
     }

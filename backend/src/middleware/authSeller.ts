@@ -12,13 +12,15 @@ declare global {
 
 const authUser = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    const tokenHeader: string | undefined = (req.headers['token']) as string;
+    const tokenHeader: string | undefined = (req.headers['stoken']) as string;
     let token: string | null = null;
 
+    
     if (tokenHeader) {
       token = tokenHeader;
     } 
-
+    
+    console.log("token form authSeller: ", token);
     if (!token) {
       res.status(401).json(new ApiError(401, "Unauthorized: No token provided"));
       return;

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import validator from "validator";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { ApiResponse } from '../utils/ApiResponce';
 import { ApiError } from '../utils/ApiError';

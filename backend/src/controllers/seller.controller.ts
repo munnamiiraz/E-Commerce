@@ -8,8 +8,11 @@ import getPrisma from '../config/prisma';
 import { AuthRequest } from '@/types/express';
 import { uploadBufferToCloudinary } from "../utils/upload";
 import { PrismaClient  } from '@prisma/client';
-const prisma = new PrismaClient();
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import validator from "validator"
 
+const prisma = new PrismaClient();
 // multer memory
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -26,7 +29,100 @@ const upload = multer({
 // }
 type SpecInput = { key?: string; value?: string } | Record<string, any>;
 
+interface ISignUp {
+  name: string,
+  email: string,
+  password: string,
+  description: string,
+  phone: string,
+  address: string,
+}
 
+function sanitizeString(str: string) {
+  return str.replace(/\u0000/g, '').trim();
+}
+
+export const signUp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, password, description, phone, address} = req.body;
+    if(!name || !email || !password || !description || !phone || !address) {
+      res.status(400).json({ success: false, message: 'All fields are required' });
+      return;
+    }
+    if(!validator.isEmail(email)) {
+      res.status(400).json(new ApiError(401, "Enter a valid email"));
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json(new ApiError(400, "Enter a strong password (min 8 chars)"));
+      return;
+    }
+
+    const salt: string = await bcrypt.genSalt(10);
+    const hashedPassword: string = await bcrypt.hash(password, salt);
+
+    const user = await prisma.seller.findUnique({
+      where: {email: email}
+    })
+
+    if(user) {
+      res.status(400).json(new ApiError(400, "User already exists"));
+      return;
+    }
+
+    const newUser = await prisma.seller.create({
+      data: { name, email, password: hashedPassword, description, phone, address }
+    });
+
+    res.status(201).json(new ApiResponse(201, newUser, "User created successfully"));
+  } catch (error) {
+    console.error('SignUp error:', error);
+    res.status(500).json(new ApiError(500, 'Error creating seller'));
+  }
+};
+
+
+
+export const signIn = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+
+    if (!email || !password) {
+      res.status(400).json(new ApiError(400, "Email and password are required"));
+      return;
+    }
+
+    const user = await prisma.seller.findUnique({ where: { email } });
+
+    if (!user) {
+      res.status(404).json(new ApiError(404, "User not found"));
+      return;
+    }
+
+    const passwordMatched = await bcrypt.compare(password, user.password);
+    if (!passwordMatched) {
+      res.status(401).json(new ApiError(401, "Invalid email or password"));
+      return;
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "7d" }
+    );
+
+    // Strip sensitive info before sending user data
+    const { password: _, ...safeUser } = user;
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, { user: safeUser, token }, "Login successful"));
+  } catch (error) {
+    console.error("SignIn Error:", error);
+    res.status(500).json(new ApiError(500, "Internal server error"));
+  }
+};
 
 
 export const addProduct = async (req: AuthRequest, res: Response): Promise<void> => {

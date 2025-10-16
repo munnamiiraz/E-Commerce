@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { placeOrder } from '../controllers/user.controller';
-import { signIn, signUp, getUser } from '../controllers/seller.controller';
+import { signIn, signUp } from '../controllers/seller.controller';
 import authSeller from '../middleware/authSeller';
 import { upload } from '../config/multer';
 import { addProduct } from '../controllers/seller.controller';
@@ -9,8 +9,8 @@ const router = Router();
 
 router.post("/sign-up", signUp)
 router.post("/sign-in", signIn)
-router.get("/get-profile", authSeller, getUser as any)
-router.post("/place-order", authSeller, upload.array('images', 4), placeOrder as any)
+// router.get("/get-profile", authSeller, getUser as any)
+// router.post("/place-order", authSeller, upload.array('images', 4), placeOrder as any)
 router.post("/add-product", authSeller, upload.array('images', 4), addProduct as any)
 
 

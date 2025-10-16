@@ -1,6 +1,9 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Upload, X, Plus, Loader2, Trash2 } from 'lucide-react';
+
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface ImageType {
   id: string;
@@ -23,9 +26,11 @@ interface FormData {
 }
 
 const SellerAddItem: React.FC = () => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [images, setImages] = useState<ImageType[]>([]);
   const [specifications, setSpecifications] = useState<Specification[]>([{ key: '', value: '' }]);
+  const [stoken, setStoken] = useState<string | null>('')
+  
   const [formData, setFormData] = useState<FormData>({
     title: '',
     category: '',
@@ -88,12 +93,9 @@ const SellerAddItem: React.FC = () => {
       images: images
     };
     console.log(submitData);
+
+    const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/add-product', submitData, {headers: {stoken}})
     
-    setTimeout(() => {
-      console.log('Form Data:', submitData);
-      setLoading(false);
-      alert('Item published successfully!');
-    }, 2000);
   };
 
   const calculateDiscount = (): number => {
@@ -106,6 +108,8 @@ const SellerAddItem: React.FC = () => {
     }
     return 0;
   };
+
+  
 
   return (
     <div className="min-h-screen bg-white">
