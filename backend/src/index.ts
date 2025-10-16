@@ -6,6 +6,7 @@ import { connectDB } from './config/prisma';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 import userRoutes from './routes/user.routes';
+import sellerRoutes from './routes/seller.routes';
 // import authRoutes from './routes/auth.routes';
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 // app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/seller', sellerRoutes);
 
 // Error handling
 app.use(notFound);

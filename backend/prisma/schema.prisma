@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  // output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -24,16 +23,15 @@ model User {
   cover        String?
   phone        String?
   address      String?
-  points       Int?            @default(0)
-  totalOrders  Int?            @default(0)
-  totalReviews Int?            @default(0)
-  designation  String?         @default("New User")
+  points       Int            @default(0)
+  totalOrders  Int            @default(0)
+  totalReviews Int            @default(0)
+  designation  String         @default("New User")
 
-  // relations (opposites implemented in other models)
-  orders       Order[]        @relation("UserOrders")
-  reviews      Review[]       @relation("UserReviews")
-  wishList     WishList[]
-  notifications Notification[] @relation("UserNotifications")
+  orders        Order[]
+  reviews       Review[]
+  wishList      WishList[]
+  notifications Notification[]
 
   createdAt    DateTime       @default(now())
 }
@@ -45,33 +43,32 @@ model Seller {
   password      String
   avatarUrl     String?
   cover         String?
-  phone         String?
-  address       String?
-  rating        Float?          @default(0)
+  phone         String
+  address       String
+  rating        Float          @default(0)
   totalRevenue  Int            @default(0)
   totalOrders   Int            @default(0)
   totalProducts Int            @default(0)
   totalReviews  Int            @default(0)
   designation   String         @default("New Seller")
-  description   String?
+  description   String
 
-
-  // relations
-  orders        Order[]        @relation("SellerOrders")
+  orders        Order[]
   products      Product[]
-  reviews       Review[]       @relation("SellerReviews")
-  // customers     User[]         // optional semantic relation; keep if you use it
-  notifications Notification[] @relation("SellerNotifications")
+  reviews       Review[]
+  notifications Notification[]
 
   createdAt     DateTime       @default(now())
 }
 
 model WishList {
   id        String  @id @default(uuid())
-  user      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
+
+  @@unique([userId, productId]) // Prevent duplicate wishlist items
 }
 
 model Notification {
@@ -79,71 +76,93 @@ model Notification {
   message   String?
   createdAt DateTime @default(now())
 
-  // make these optional so notification can belong to user OR seller (or both)
-  user      User?    @relation("UserNotifications", fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String?
 
-  seller    Seller?  @relation("SellerNotifications", fields: [sellerId], references: [id])
+  seller    Seller?  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   sellerId  String?
 }
+
 
 model Order {
   id          String        @id @default(uuid())
 
-  orderedBy   User          @relation("UserOrders", fields: [orderedById], references: [id])
+  orderedBy   User          @relation(fields: [orderedById], references: [id], onDelete: Cascade)
   orderedById String
 
-  sendBy      Seller        @relation("SellerOrders", fields: [sendById], references: [id])
+  sendBy      Seller        @relation(fields: [sendById], references: [id], onDelete: Cascade)
   sendById    String
 
-  product     Product       @relation(fields: [productId], references: [id])
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
   productId   String
 
   quantity    Int
   price       Int
 
-  status      productStatus
+  status      productStatus @default(PROCESSING)
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime?
+  updatedAt   DateTime      @updatedAt
   deliveredAt DateTime?
   cancelledAt DateTime?
   shippedAt   DateTime?
   receivedAt  DateTime?
+}
 
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  publicId  String?      // cloudinary public_id
+  filename  String?
+  mimeType  String?
+  size      Int?
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+}
+
+model Specification {
+  id        String   @id @default(cuid())
+  key       String
+  value     String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
 }
 
 model Product {
-  id         String    @id @default(uuid())
-  name       String
-  price      Int
-  description String?
-  rating     Float?
-  images     String[]
-  stock      Int
-  category   String?
-  createdAt  DateTime  @default(now())
+  id             String          @id @default(cuid())
+  title          String
+  description    String
+  category       String
+  originalPrice  Int
+  discountPrice  Int
+  quantity       Int
+  
+  // FIXED: Added seller relation
+  seller         Seller          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sellerId       String
 
-  // relations / opposites
-  seller     Seller    @relation(fields: [sellerId], references: [id])
-  sellerId   String
+  // FIXED: Added back-references
+  images         ProductImage[]
+  specifications Specification[]
+  orders         Order[]
+  reviews        Review[]
+  wishList       WishList[]
 
-  reviews    Review[]
-  orders     Order[]   // opposite of Order.product
-  wishLists  WishList[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Review {
   id         String   @id @default(uuid())
 
-  product    Product  @relation(fields: [productId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  String
 
-  // author can be optional (e.g., guest review)
-  author     User?    @relation("UserReviews", fields: [authorId], references: [id])
+  author     User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorId   String?
 
-  // keep seller relation if you want seller-level reviews, optional
-  seller     Seller?  @relation("SellerReviews", fields: [sellerId], references: [id])
+  seller     Seller?  @relation(fields: [sellerId], references: [id], onDelete: SetNull)
   sellerId   String?
 
   rating     Int

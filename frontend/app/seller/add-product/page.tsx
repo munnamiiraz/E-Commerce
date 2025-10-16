@@ -87,6 +87,7 @@ const SellerAddItem: React.FC = () => {
       specifications: validSpecs,
       images: images
     };
+    console.log(submitData);
     
     setTimeout(() => {
       console.log('Form Data:', submitData);

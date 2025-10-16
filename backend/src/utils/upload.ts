@@ -1,33 +1,41 @@
+// server/utils/cloudinary-buffer.ts
 import cloudinary from '../config/cloudinary';
 
-interface UploadResponse {
+export interface UploadResponse {
   url: string;
   publicId: string;
+  format?: string;
+  bytes?: number;
 }
 
-export const uploadToCloudinary = async (
-  file: Express.Multer.File,
-  folder: string = 'E-commerce-gocart'
+export const uploadBufferToCloudinary = (
+  buffer: Buffer,
+  filename = 'file',
+  folder = 'E-commerce-gocart'
 ): Promise<UploadResponse> => {
-  try {
-    const result = await cloudinary.uploader.upload(file.path, {
+  return new Promise((resolve, reject) => {
+    const opts = {
       folder,
-      resource_type: 'auto',
-    });
-
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
+      resource_type: 'auto' as const,
+      public_id: `${Date.now()}-${filename.replace(/\.[^/.]+$/, '')}`,
     };
-  } catch (error) {
-    throw new Error('Error uploading file to Cloudinary');
-  }
+    const stream = cloudinary.uploader.upload_stream(opts, (err: any, result: any) => {
+      if (err) return reject(err);
+      resolve({
+        url: result.secure_url,
+        publicId: result.public_id,
+        format: result.format,
+        bytes: result.bytes,
+      });
+    });
+    stream.end(buffer);
+  });
 };
 
 export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
   try {
     await cloudinary.uploader.destroy(publicId);
-  } catch (error) {
-    throw new Error('Error deleting file from Cloudinary');
+  } catch (err: any) {
+    throw new Error('Cloudinary delete failed: ' + (err.message || String(err)));
   }
 };

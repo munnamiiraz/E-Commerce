@@ -13,8 +13,9 @@ interface OrderData {
   total: number;
   items: Array<{
     id: string;
-    name: string;
-    price: number;
+    title: string;
+    originalPrice: number;
+    discountPrice: number;
     quantity: number;
   }>;
   deliveryAddress: {
@@ -43,8 +44,9 @@ const PaymentPage: React.FC = () => {
     items: [
       {
         id: '1',
-        name: 'Apple Wireless Earbuds Pro',
-        price: 99.00,
+        title: 'Apple Wireless Earbuds Pro',
+        originalPrice: 199.00,
+        discountPrice: 99.00,
         quantity: 2
       }
     ],

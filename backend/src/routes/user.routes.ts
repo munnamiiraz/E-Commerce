@@ -7,6 +7,7 @@ const router = Router();
 router.post("/sign-up", signUp)
 router.post("/sign-in", signIn)
 router.get("/get-profile", authUser, getUser as any)
+router.post("/add-product", authUser, getUser as any)
 router.post("/place-order", authUser, placeOrder as any)
 
 

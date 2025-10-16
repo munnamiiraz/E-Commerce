@@ -49,11 +49,12 @@ interface ISignIn {
   token: string
 }
 
-interface IItem {
+interface IProduct {
   id: string,
-  name: string,
+  title: string,
   quantity: number,
-  price: number
+  originalPrice: number,
+  discountPrice: number,
 }
 
 interface IPlaceOrder {
@@ -65,7 +66,7 @@ interface IPlaceOrder {
     zip: string
   },
   orderDetails: {
-    items: IItem[],
+    items: IProduct[],
     shipping: number,
     subtotal: number,
     tax: number,
@@ -214,7 +215,7 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
         return;
       }
       // price may be number (float/int) — we'll round to integer because schema.price is Int
-      if (typeof it.price !== "number") {
+      if (typeof it.discountPrice !== "number") {
         res.status(400).json(new ApiError(400, "Each item must provide a numeric price"));
         return;
       }
@@ -225,7 +226,7 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
     // fetch all products referenced
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, price: true, stock: true, name: true, sellerId: true },
+      select: { id: true, quantity: true, discountPrice: true , originalPrice: true, title: true, sellerId: true },
     });
 
     if (products.length !== productIds.length) {
@@ -245,12 +246,12 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
 
     for (const it of items) {
       const prod = prodMap.get(it.id)!;
-      if (prod.stock < it.quantity) {
-        res.status(400).json(new ApiError(400, `Insufficient stock for ${prod.name || prod.id}. Available: ${prod.stock}, requested: ${it.quantity}`));
+      if (prod.quantity < it.quantity) {
+        res.status(400).json(new ApiError(400, `Insufficient stock for ${prod.title || prod.id}. Available: ${prod.quantity}, requested: ${it.quantity}`));
         return;
       }
 
-      const linePriceInt = Math.round(it.price); // schema expects Int
+      const linePriceInt = Math.round(it.discountPrice || it.originalPrice); // schema expects Int
       const lineTotal = linePriceInt * it.quantity;
 
       // accumulate seller revenue & order counts
@@ -277,7 +278,7 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
             sendById: prod.sellerId,
             productId: prod.id,
             quantity: it.quantity,
-            price: Math.round(it.price), // snapshot price (Int)
+            price: Math.round(it.discountPrice || it.originalPrice), // snapshot price (Int)
             status: "PROCESSING", // default initial status; adjust as needed
             createdAt: timestamp,
           },
@@ -287,7 +288,7 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
         await tx.product.update({
           where: { id: prod.id },
           data: {
-            stock: { decrement: it.quantity },
+            quantity: { decrement: it.quantity },
           },
         });
 
