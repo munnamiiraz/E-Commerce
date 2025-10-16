@@ -20,7 +20,7 @@ const authUser = (req: Request, res: Response, next: NextFunction): void => {
       token = tokenHeader;
     } 
     
-    console.log("token form authSeller: ", token);
+    // console.log("token form authSeller: ", token);
     if (!token) {
       res.status(401).json(new ApiError(401, "Unauthorized: No token provided"));
       return;
@@ -28,7 +28,7 @@ const authUser = (req: Request, res: Response, next: NextFunction): void => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    console.log("Decoded token from authUser:", decoded);
+    // console.log("Decoded token from authUser:", decoded);
 
     if (!decoded) {
       res.status(401).json(new ApiError(401, "Unauthorized: Invalid token"));

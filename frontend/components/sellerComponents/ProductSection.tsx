@@ -1,6 +1,8 @@
 "use client"
 import React, { useState } from 'react';
 import { Search, Filter, Edit, Trash2, Eye, Package, TrendingUp, DollarSign, ShoppingBag } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface Product {
   id: string;
@@ -88,6 +90,15 @@ const ProductSection: React.FC = () => {
       status: 'active'
     }
   ]);
+
+  const fetchProducts = async () => {
+    try{
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/products');
+      setProducts(response.data.products);
+    } catch {
+
+    }
+  }
 
   const calculateDiscount = (original: number, price: number): number => {
     return Math.floor(((original - price) / original) * 100);

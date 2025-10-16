@@ -4,11 +4,11 @@ import { Upload, X, Plus, Loader2, Trash2 } from 'lucide-react';
 
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { motion } from "framer-motion";
 
 interface ImageType {
-  id: string;
+  publicId: string;
   url: string;
-  file: File;
 }
 
 interface Specification {
@@ -25,19 +25,42 @@ interface FormData {
   description: string;
 }
 
+interface IResponce{
+  data: {
+    product: {
+      id: string,
+      category: string,
+      title: string,
+      description: string,
+      originalPrice: number,
+      discountPrice: number,
+      quantity: number,
+      images: ImageType[],
+      specifications: Specification[],
+      sellerId: string,
+      createdAt: string,
+      updatedAt: string
+    },
+    success: boolean
+  }
+}
+
 const SellerAddItem: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
+  const [mainLoading, setMainLoading] = useState<boolean>(true);
   const [images, setImages] = useState<ImageType[]>([]);
   const [specifications, setSpecifications] = useState<Specification[]>([{ key: '', value: '' }]);
   const [stoken, setStoken] = useState<string | null>('')
   
+  
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     category: '',
     originalPrice: '',
     discountPrice: '',
     quantity: '',
-    description: ''
+    description: '',
   });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,15 +69,14 @@ const SellerAddItem: React.FC = () => {
     const filesToAdd = files.slice(0, remainingSlots);
     
     const newImages: ImageType[] = filesToAdd.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
+      publicId: Math.random().toString(36).substr(2, 9),
       url: URL.createObjectURL(file),
-      file: file
     }));
     setImages([...images, ...newImages]);
   };
 
   const removeImage = (id: string) => {
-    setImages(images.filter(img => img.id !== id));
+    setImages(images.filter(img => img.publicId !== id));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -83,7 +105,7 @@ const SellerAddItem: React.FC = () => {
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setMainLoading(true);
     
     const validSpecs = specifications.filter(spec => spec.key && spec.value);
     
@@ -94,8 +116,23 @@ const SellerAddItem: React.FC = () => {
     };
     console.log(submitData);
 
-    const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/add-product', submitData, {headers: {stoken}})
-    
+    const response: IResponce = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/add-product', submitData, {headers: {stoken}})
+    setMainLoading(false);
+    if(response.data.success) {
+      toast.success("Product added successfully")
+      setFormData({
+        title: '',
+        category: '',
+        originalPrice: '',
+        discountPrice: '',
+        quantity: '',
+        description: '',
+      })
+      setSpecifications([]);
+      setImages([]);
+    } else {
+      toast.error("something went wrong")
+    }
   };
 
   const calculateDiscount = (): number => {
@@ -110,7 +147,17 @@ const SellerAddItem: React.FC = () => {
   };
 
   
+  
 
+  useEffect(() => {
+    const stoken = localStorage.getItem('stoken');
+    if(!stoken) {
+      toast.error("please login to continue...")
+      window.location.href = '/seller/sign-in'
+    }
+    setStoken(stoken);
+    setLoading(false);
+  }, []);
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
@@ -231,7 +278,7 @@ const SellerAddItem: React.FC = () => {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {images.map((img, idx) => (
-                    <div key={img.id} className="relative group">
+                    <div key={img.publicId} className="relative group">
                       <img
                         src={img.url}
                         alt={`Product ${idx + 1}`}
@@ -239,7 +286,7 @@ const SellerAddItem: React.FC = () => {
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(img.id)}
+                        onClick={() => removeImage(img.publicId)}
                         className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
                       >
                         <X size={16} />

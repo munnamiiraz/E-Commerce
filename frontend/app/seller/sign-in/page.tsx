@@ -142,7 +142,7 @@ export default function SellerAuth() {
       }
 
       const token = response.data.data.token;
-      await localStorage.setItem('sToken', token);
+      await localStorage.setItem('stoken', token);
       toast.success('Seller login successful')
       
       

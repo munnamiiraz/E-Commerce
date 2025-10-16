@@ -38,6 +38,28 @@ interface ISignUp {
   address: string,
 }
 
+interface IProduct {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  originalPrice: number;
+  discountPrice: number;
+  quantity: number;
+  sellerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  images: {
+    url: string;
+    publicId: string;
+  }[];
+  specifications: {
+    key: string;
+    value: string;
+  }[];
+}
+
+
 function sanitizeString(str: string) {
   return str.replace(/\u0000/g, '').trim();
 }
@@ -218,5 +240,19 @@ export const addProduct = async (req: AuthRequest, res: Response): Promise<void>
     console.error('Product create error:', err);
     res.status(500).json({ success: false, message: 'Server error', error: err.message });
     return 
+  }
+}
+
+export const getProduct = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user
+
+    const products = await prisma.product.findMany({
+      where: { sellerId: user._id },
+    });
+    res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
+  } catch (err: any) {
+    console.error('Product fetch error:', err);
+    res.status(500).json(new ApiError(500, 'Server error'))
   }
 }
