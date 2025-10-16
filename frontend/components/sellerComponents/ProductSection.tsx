@@ -1,18 +1,24 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Filter, Edit, Trash2, Eye, Package, TrendingUp, DollarSign, ShoppingBag } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+interface IImage {
+  publicId: string;
+  url: string;
+}
+
 interface Product {
   id: string;
   title: string;
+  description: string;
   category: string;
   price: number;
   originalPrice: number;
   stock: number;
   sold: number;
-  image: string;
+  image: IImage[];
   status: 'active' | 'draft' | 'out-of-stock';
 }
 
@@ -22,81 +28,22 @@ const ProductSection: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   // Sample products data - replace with your backend data
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: '1',
-      title: 'Premium Wireless Headphones',
-      category: 'Electronics',
-      price: 199,
-      originalPrice: 299,
-      stock: 23,
-      sold: 145,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop',
-      status: 'active'
-    },
-    {
-      id: '2',
-      title: 'Smart Watch Pro Series',
-      category: 'Electronics',
-      price: 349,
-      originalPrice: 499,
-      stock: 12,
-      sold: 89,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
-      status: 'active'
-    },
-    {
-      id: '3',
-      title: 'Leather Laptop Bag',
-      category: 'Fashion',
-      price: 89,
-      originalPrice: 129,
-      stock: 0,
-      sold: 234,
-      image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop',
-      status: 'out-of-stock'
-    },
-    {
-      id: '4',
-      title: 'Gaming Mouse RGB',
-      category: 'Electronics',
-      price: 59,
-      originalPrice: 89,
-      stock: 45,
-      sold: 312,
-      image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop',
-      status: 'active'
-    },
-    {
-      id: '5',
-      title: 'Mechanical Keyboard',
-      category: 'Electronics',
-      price: 129,
-      originalPrice: 179,
-      stock: 8,
-      sold: 156,
-      image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&h=400&fit=crop',
-      status: 'active'
-    },
-    {
-      id: '6',
-      title: 'Cotton T-Shirt Pack',
-      category: 'Fashion',
-      price: 45,
-      originalPrice: 65,
-      stock: 67,
-      sold: 421,
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop',
-      status: 'active'
-    }
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
 
   const fetchProducts = async () => {
+    const stoken = localStorage.getItem('stoken');
+    if(!stoken) {
+      toast.error("please login to continue...")
+      window.location.href = '/seller/sign-in'
+      return
+    }
     try{
-      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/products');
-      setProducts(response.data.products);
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-product', {headers: {stoken}});
+      setProducts(response.data.data);
+      console.log(response.data.data);
+      
     } catch {
-
+      toast.error("something went wrong")
     }
   }
 
@@ -117,17 +64,21 @@ const ProductSection: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products?.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     const matchesStatus = selectedStatus === 'all' || product.status === selectedStatus;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const totalProducts = products.length;
-  const totalSold = products.reduce((sum, p) => sum + p.sold, 0);
-  const totalRevenue = products.reduce((sum, p) => sum + (p.price * p.sold), 0);
-  const activeProducts = products.filter(p => p.status === 'active').length;
+  const totalProducts = products?.length;
+  const totalSold = products?.reduce((sum, p) => sum + p.sold, 0);
+  const totalRevenue = products?.reduce((sum, p) => sum + (p.price * p.sold), 0);
+  const activeProducts = products?.filter(p => p.status === 'active').length;
+
+  useEffect(() => {
+    fetchProducts();
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,7 +114,7 @@ const ProductSection: React.FC = () => {
               <span className="text-gray-600 text-sm font-medium">Total Revenue</span>
               <DollarSign className="text-purple-600" size={24} />
             </div>
-            <p className="text-3xl font-bold text-gray-900">৳{totalRevenue.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-gray-900">৳{totalRevenue?.toLocaleString()}</p>
             <p className="text-gray-500 text-sm mt-1">All time</p>
           </div>
 
@@ -173,7 +124,7 @@ const ProductSection: React.FC = () => {
               <ShoppingBag className="text-orange-600" size={24} />
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              {products.filter(p => p.stock > 0 && p.stock < 10).length}
+              {products?.filter(p => p.stock > 0 && p.stock < 10).length}
             </p>
             <p className="text-orange-600 text-sm mt-1">Need restock</p>
           </div>
@@ -226,7 +177,7 @@ const ProductSection: React.FC = () => {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
+          {filteredProducts?.map((product) => (
             <div
               key={product.id}
               className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
@@ -241,7 +192,7 @@ const ProductSection: React.FC = () => {
                 />
                 <div className="absolute top-3 left-3">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(product.status)}`}>
-                    {product.status.replace('-', ' ').toUpperCase()}
+                    {/* {product. && product.status.replace('-', ' ').toUpperCase()} */}
                   </span>
                 </div>
                 {calculateDiscount(product.originalPrice, product.price) > 0 && (
@@ -322,7 +273,7 @@ const ProductSection: React.FC = () => {
         </div>
 
         {/* Empty State */}
-        {filteredProducts.length === 0 && (
+        {filteredProducts?.length === 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
             <Package className="mx-auto text-gray-400 mb-4" size={64} />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>

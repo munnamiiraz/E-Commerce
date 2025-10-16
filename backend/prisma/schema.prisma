@@ -49,14 +49,18 @@ model Seller {
   totalRevenue  Int            @default(0)
   totalOrders   Int            @default(0)
   totalProducts Int            @default(0)
+  totalCustomers Int            @default(0)
   totalReviews  Int            @default(0)
   designation   String         @default("New Seller")
+  totalSolds    Int            @default(0)
+  lowStock      Int            @default(0)
   description   String
 
   orders        Order[]
   products      Product[]
   reviews       Review[]
   notifications Notification[]
+
 
   createdAt     DateTime       @default(now())
 }
@@ -137,6 +141,13 @@ model Product {
   originalPrice  Int
   discountPrice  Int
   quantity       Int
+  topPerforming  Boolean         @default(false)
+  status         productStatus   @default(PROCESSING)
+  views          Int             @default(0)
+  rating         Float           @default(0.0)
+  totalReviews   Int             @default(0)
+  totalSolds     Int             @default(0)
+  lowStock       Int             @default(0)
   
   // FIXED: Added seller relation
   seller         Seller          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
