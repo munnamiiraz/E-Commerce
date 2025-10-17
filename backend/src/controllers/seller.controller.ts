@@ -266,6 +266,25 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
   }
 }
 
+export const getProductById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user
+    const { id } = req.params
+    
+
+    const products = await prisma.product.findMany({
+      where: { id },
+      include: { images: true, specifications: true, reviews: true},
+    });
+    console.log(products);
+    
+    res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
+  } catch (err: any) {
+    console.error('Product fetch error:', err);
+    res.status(500).json(new ApiError(500, 'Server error'))
+  }
+}
+
 export const getSellerInfo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user

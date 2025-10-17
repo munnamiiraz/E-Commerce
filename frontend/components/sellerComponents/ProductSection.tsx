@@ -228,7 +228,6 @@ const ProductSection: React.FC = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts?.map((product) => (
-            <Link href={`/product/${product.id}`}>
             <div
               key={product.id}
               className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
@@ -289,16 +288,19 @@ const ProductSection: React.FC = () => {
 
                 {/* Actions */}
                 <div className="flex gap-2">
+                  <Link href={`/product/${product.id}`}>
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('View product:', product.id);
                     }}
                     className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                  >
+                    >
                     <Eye size={16} />
                     View
                   </button>
+                  </Link>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -321,7 +323,6 @@ const ProductSection: React.FC = () => {
                 </div>
               </div>
             </div>
-            </Link>
           ))}
         </div>
 

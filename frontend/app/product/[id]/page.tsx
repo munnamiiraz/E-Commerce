@@ -1,5 +1,5 @@
 "use client"
-import React, { use, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { 
   Heart, 
   Share2, 
@@ -14,16 +14,59 @@ import {
   Minus,
   Plus,
   Store,
-  ArrowRight
+  ArrowRight,
+  StarHalf,
+  StarOff
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import toast from 'react-hot-toast';
+import axios from 'axios';
+
+interface IImage {
+  publicId: string;
+  url: string;
+}
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  name: string;
+  date: string;
+}
+interface Specification {
+  key: string;
+  value: string;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  quantity: number
+  originalPrice: number;
+  discountPrice: number;
+  lowStock: number;
+  sold: number;
+  image: IImage[];
+  rating: number;
+  totalSolds: number;
+  totalReviews: number;
+  topPerforming: boolean;
+  reviews: Review[];
+  specifications: Specification[];
+  status: 'active' | 'draft' | 'out-of-stock';
+}
 
 const ProductPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'specifications'>('description');
+  const [product, setProduct] = useState<Product | null>(null);
+  
   const {id} = useParams();
 
   const images = [
@@ -33,19 +76,20 @@ const ProductPage: React.FC = () => {
     'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&h=800&fit=crop'
   ];
 
-  const reviews = [
-    { id: 1, name: 'Sarah Johnson', rating: 5, date: '2 days ago', comment: 'Absolutely love this product! The quality exceeded my expectations.' },
-    { id: 2, name: 'Mike Chen', rating: 4, date: '1 week ago', comment: 'Great product, fast shipping. Highly recommend!' },
-    { id: 3, name: 'Emma Davis', rating: 5, date: '2 weeks ago', comment: 'Best purchase I\'ve made this year. Worth every penny!' }
-  ];
+  // const reviews = [];
 
-  const specifications = [
-    { label: 'Brand', value: 'Premium Tech' },
-    { label: 'Model', value: 'PT-2025-PRO' },
-    { label: 'Warranty', value: '2 Years International' },
-    { label: 'Weight', value: '1.2 kg' },
-    { label: 'Dimensions', value: '30 x 20 x 15 cm' }
-  ];
+  const fetchProducts = async () => {
+    const stoken = localStorage.getItem('stoken');
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + `/api/seller/get-product/${id}`, {headers: {stoken}});
+      console.log(response.data.data[0]);
+      setProduct(response.data.data[0]);
+
+    } catch (error) {
+      toast.error("something went wrong")
+    }
+  }
+
 
   const handleQuantityChange = (type: 'increase' | 'decrease') => {
     if (type === 'increase') {
@@ -54,6 +98,11 @@ const ProductPage: React.FC = () => {
       setQuantity(prev => prev - 1);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [])
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -141,19 +190,29 @@ const ProductPage: React.FC = () => {
             {/* Title and Rating */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                Premium Wireless Headphones Pro
+                {product?.title}
               </h1>
               
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+                  <div className="flex items-center gap-1">
+                    {product && Array.from({ length: 5 }, (_, index) => {
+                      const starNumber = index + 1;
+
+                      if (product?.rating >= starNumber) {
+                        return <Star key={index} className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+                      } else if (product?.rating >= starNumber - 0.5) {
+                        return <StarHalf key={index} className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+                      } else {
+                        return <StarOff key={index} className="w-5 h-5 text-gray-300" />;
+                      }
+                    })}
+                  </div>
                 </div>
-                <span className="text-gray-600 font-medium">4.9</span>
+                <span className="text-gray-600 font-medium">{product?.rating} Ratings</span>
                 <span className="text-gray-400">|</span>
                 <a href="#reviews" className="text-emerald-600 hover:text-emerald-700 font-medium">
-                  127 Reviews
+                  {product?.totalReviews} Reviews
                 </a>
               </div>
             </div>
@@ -161,10 +220,12 @@ const ProductPage: React.FC = () => {
             {/* Price */}
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6">
               <div className="flex items-baseline space-x-4">
-                <span className="text-5xl font-bold text-emerald-600">$199</span>
-                <span className="text-2xl text-gray-400 line-through">$299</span>
+                <span className="text-5xl font-bold text-emerald-600">${product?.discountPrice}</span>
+                <span className="text-2xl text-gray-400 line-through">${}{product?.originalPrice}</span>
                 <span className="px-4 py-1 bg-red-500 text-white text-sm font-bold rounded-full">
-                  -33%
+                  {
+                    Math.round(((product?.originalPrice! - product?.discountPrice!) / product?.originalPrice!) * 100)
+                  }%
                 </span>
               </div>
               <p className="text-sm text-emerald-700 mt-2 flex items-center">
@@ -209,7 +270,7 @@ const ProductPage: React.FC = () => {
                   </button>
                 </div>
                 <span className="text-gray-600">
-                  <span className="font-semibold text-emerald-600">23 items</span> left in stock
+                  <span className="font-semibold text-emerald-600">{product?.quantity} items</span> left in stock
                 </span>
               </div>
             </div>
@@ -272,21 +333,14 @@ const ProductPage: React.FC = () => {
             {activeTab === 'description' && (
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed text-lg">
-                  Experience premium audio quality with our state-of-the-art wireless headphones. 
-                  Featuring advanced noise cancellation technology, these headphones deliver crystal-clear 
-                  sound and deep bass that will immerse you in your favorite music, podcasts, and calls.
-                </p>
-                <p className="text-gray-700 leading-relaxed text-lg mt-4">
-                  Built with premium materials and designed for all-day comfort, these headphones are 
-                  perfect for any environment. Whether you're commuting, working from home, or hitting 
-                  the gym, enjoy up to 30 hours of playtime on a single charge.
+                  {product?.description}
                 </p>
               </div>
             )}
 
             {activeTab === 'reviews' && (
               <div className="space-y-6">
-                {reviews.map((review) => (
+                {product?.reviews?.map((review) => (
                 
                   <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
                     <div className="flex items-start justify-between mb-3">
@@ -313,9 +367,9 @@ const ProductPage: React.FC = () => {
 
             {activeTab === 'specifications' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {specifications.map((spec, idx) => (
+                {product?.specifications?.map((spec, idx) => (
                   <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                    <span className="font-semibold text-gray-700">{spec.label}</span>
+                    <span className="font-semibold text-gray-700">{spec.key}</span>
                     <span className="text-gray-900">{spec.value}</span>
                   </div>
                 ))}
