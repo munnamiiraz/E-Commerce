@@ -234,6 +234,15 @@ export const addProduct = async (req: AuthRequest, res: Response): Promise<void>
       include: { images: true, specifications: true },
     });
 
+    const seller = await prisma.seller.update({
+      where: { id: sellerToConnect },
+      data: {
+        totalProducts: { increment: 1 },
+      }
+    });
+
+
+
     res.status(201).json({ success: true, product: created });
     return 
   } catch (err: any) {
@@ -253,6 +262,23 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
     res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
   } catch (err: any) {
     console.error('Product fetch error:', err);
+    res.status(500).json(new ApiError(500, 'Server error'))
+  }
+}
+
+export const getSellerInfo = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user
+    // console.log(user);
+    
+    // console.log(user._id);
+    
+    const seller = await prisma.seller.findUnique({
+      where: { id: user.id },
+    });
+    res.status(200).json(new ApiResponse(200, seller, "Seller fetched successfully"));
+  } catch (error) {
+    console.log(error);
     res.status(500).json(new ApiError(500, 'Server error'))
   }
 }

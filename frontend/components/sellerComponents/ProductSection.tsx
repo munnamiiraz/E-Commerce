@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Filter, Edit, Trash2, Eye, Package, TrendingUp, DollarSign, ShoppingBag } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Link from 'next/link';
 
 interface IImage {
   publicId: string;
@@ -15,12 +16,39 @@ interface Product {
   description: string;
   category: string;
   price: number;
+  quantity: number
   originalPrice: number;
-  stock: number;
+  discountPrice: number;
+  lowStock: number;
   sold: number;
   image: IImage[];
+  rating: number;
+  totalSolds: number;
+  totalReviews: number;
+  topPerforming: boolean;
+  reviews: number;
   status: 'active' | 'draft' | 'out-of-stock';
 }
+
+interface SellerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  rating: number;
+  totalOrders: number;
+  totalRevenue: number;
+  totalSolds: number;
+  totalProducts: number;
+  totalCustomer: number;
+  totalReviews: number;
+  activeProducts: number;
+  designation: string;
+  // image: string;
+  lowStock: number;
+  description: string;
+}
+
 
 const ProductSection: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -29,6 +57,8 @@ const ProductSection: React.FC = () => {
 
   // Sample products data - replace with your backend data
   const [products, setProducts] = useState<Product[]>([]);
+  const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
+
 
   const fetchProducts = async () => {
     const stoken = localStorage.getItem('stoken');
@@ -41,6 +71,24 @@ const ProductSection: React.FC = () => {
       const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-product', {headers: {stoken}});
       setProducts(response.data.data);
       console.log(response.data.data);
+      
+    } catch {
+      toast.error("something went wrong")
+    }
+  }
+
+  const fetchSellerInfo = async () => {
+    const stoken = localStorage.getItem('stoken');
+    if(!stoken) {
+      toast.error("please login to continue...")
+      window.location.href = '/seller/sign-in'
+      return
+    }
+    try{
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-seller-info', {headers: {stoken}});
+      const seller: SellerInfo = response.data.data;
+      setSellerInfo(seller);
+      console.log(seller);
       
     } catch {
       toast.error("something went wrong")
@@ -78,6 +126,7 @@ const ProductSection: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchSellerInfo();
   }, [])
 
   return (
@@ -96,8 +145,8 @@ const ProductSection: React.FC = () => {
               <span className="text-gray-600 text-sm font-medium">Total Products</span>
               <Package className="text-blue-600" size={24} />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totalProducts}</p>
-            <p className="text-green-600 text-sm mt-1">{activeProducts} Active</p>
+            <p className="text-3xl font-bold text-gray-900">{sellerInfo?.totalProducts}</p>
+            <p className="text-green-600 text-sm mt-1">{sellerInfo?.activeProducts} Active</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
@@ -105,7 +154,7 @@ const ProductSection: React.FC = () => {
               <span className="text-gray-600 text-sm font-medium">Total Sold</span>
               <TrendingUp className="text-green-600" size={24} />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totalSold}</p>
+            <p className="text-3xl font-bold text-gray-900">{sellerInfo?.totalSolds}</p>
             <p className="text-gray-500 text-sm mt-1">All time</p>
           </div>
 
@@ -114,7 +163,7 @@ const ProductSection: React.FC = () => {
               <span className="text-gray-600 text-sm font-medium">Total Revenue</span>
               <DollarSign className="text-purple-600" size={24} />
             </div>
-            <p className="text-3xl font-bold text-gray-900">৳{totalRevenue?.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-gray-900">৳{sellerInfo?.totalRevenue?.toLocaleString()}</p>
             <p className="text-gray-500 text-sm mt-1">All time</p>
           </div>
 
@@ -124,7 +173,8 @@ const ProductSection: React.FC = () => {
               <ShoppingBag className="text-orange-600" size={24} />
             </div>
             <p className="text-3xl font-bold text-gray-900">
-              {products?.filter(p => p.stock > 0 && p.stock < 10).length}
+              {/* {products?.filter(p => p.stock > 0 && p.stock < 10).length} */}
+              {sellerInfo?.lowStock}
             </p>
             <p className="text-orange-600 text-sm mt-1">Need restock</p>
           </div>
@@ -153,10 +203,10 @@ const ProductSection: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="all">All Categories</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Fashion">Fashion</option>
-                <option value="Home">Home & Garden</option>
-                <option value="Sports">Sports</option>
+                <option value="electronics">Electronics</option>
+                <option value="fashion">Fashion</option>
+                <option value="home">Home & Garden</option>
+                <option value="sports">Sports</option>
               </select>
             </div>
 
@@ -178,18 +228,20 @@ const ProductSection: React.FC = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts?.map((product) => (
+            <Link href={`/product/${product.id}`}>
             <div
               key={product.id}
               className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
               onClick={() => console.log('Navigate to product:', product.id)}
+              
             >
               {/* Product Image */}
               <div className="relative h-48 overflow-hidden bg-gray-100">
-                <img
-                  src={product.image}
-                  alt={product.title}
+                {/* <img
+                  src={product?.image}
+                  alt={product?.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                /> */}
                 <div className="absolute top-3 left-3">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(product.status)}`}>
                     {/* {product. && product.status.replace('-', ' ').toUpperCase()} */}
@@ -215,8 +267,8 @@ const ProductSection: React.FC = () => {
 
                 {/* Price */}
                 <div className="flex items-baseline gap-2 mb-4">
-                  <span className="text-2xl font-bold text-green-600">৳{product.price}</span>
-                  {product.originalPrice > product.price && (
+                  <span className="text-3xl font-bold text-green-600">৳{product.discountPrice}</span>
+                  {product.originalPrice > product.discountPrice && (
                     <span className="text-sm text-gray-400 line-through">৳{product.originalPrice}</span>
                   )}
                 </div>
@@ -225,13 +277,13 @@ const ProductSection: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3 mb-4 pb-4 border-b border-gray-200">
                   <div>
                     <p className="text-xs text-gray-500">Stock</p>
-                    <p className={`text-sm font-semibold ${product.stock === 0 ? 'text-red-600' : product.stock < 10 ? 'text-orange-600' : 'text-gray-900'}`}>
-                      {product.stock} units
+                    <p className={`text-sm font-semibold ${product.quantity === 0 ? 'text-red-600' : product.quantity < 10 ? 'text-orange-600' : 'text-gray-900'}`}>
+                      {product.quantity} units
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Sold</p>
-                    <p className="text-sm font-semibold text-gray-900">{product.sold} units</p>
+                    <p className="text-sm font-semibold text-gray-900">{product.totalSolds} units</p>
                   </div>
                 </div>
 
@@ -269,6 +321,7 @@ const ProductSection: React.FC = () => {
                 </div>
               </div>
             </div>
+            </Link>
           ))}
         </div>
 
