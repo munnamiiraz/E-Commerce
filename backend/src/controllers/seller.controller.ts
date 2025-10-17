@@ -265,6 +265,39 @@ export const getProduct = async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json(new ApiError(500, 'Server error'))
   }
 }
+export const getAllProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    const products = await prisma.product.findMany({
+      take: 12,
+      orderBy: { createdAt: 'desc' },
+    });
+    res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
+  } catch (err: any) {
+    console.error('Product fetch error:', err);
+    res.status(500).json(new ApiError(500, 'Server error'))
+  }
+}
+
+export const getBestSellingProducts = async (req: Request, res: Response): Promise<void> => {
+  try {
+
+    const products = await prisma.product.findMany({
+      where: {
+        totalSolds: {
+          gte: 1,
+        },
+      },
+      orderBy: {
+        totalSolds: 'desc',
+      }
+    });
+    res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
+  } catch (err: any) {
+    console.error('Product fetch error:', err);
+    res.status(500).json(new ApiError(500, 'Server error'))
+  }
+}
 
 export const getProductById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

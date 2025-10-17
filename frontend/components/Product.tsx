@@ -1,16 +1,48 @@
 "use client"
-import React, { useState } from 'react';
-import { Heart, ShoppingCart, Eye, Star } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Heart, ShoppingCart, Eye, Star, StarHalf, StarOff } from 'lucide-react';
 import Link from 'next/link';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { calculateDiscountPrice } from '@/utils';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice?: number;
+interface IImage {
+  publicId: string;
+  url: string;
+}
+interface Review {
+  id: string;
   rating: number;
-  reviews: number;
-  image: string;
+  comment: string;
+  name: string;
+  date: string;
+}
+interface Specification {
+  key: string;
+  value: string;
+}
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  quantity: number
+  originalPrice: number;
+  discountPrice: number;
+  lowStock: number;
+  sold: number;
+  image: IImage[];
+  rating: number;
+  totalSolds: number;
+  totalReviews: number;
+  topPerforming: boolean;
+  reviews: Review[];
+  specifications: Specification[];
+  status: 'active' | 'draft' | 'out-of-stock';
+}
+
+interface ExtendedProduct extends Product {
   badge?: 'New' | 'Sale' | 'Hot';
   discount?: number;
 }
@@ -20,129 +52,38 @@ interface ProductCardsProps {
 }
 
 const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [latestProducts, setLatestProducts] = useState<Product[]>([]);
+  const [bestSellingProducts, setBestSellingProducts] = useState<Product[]>([]);
 
-  const latestProducts: Product[] = [
-    {
-      id: 1,
-      name: 'Smart Home Cleaner',
-      price: 229,
-      originalPrice: 299,
-      rating: 4.5,
-      reviews: 128,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop',
-      badge: 'New',
-      discount: 23
-    },
-    {
-      id: 2,
-      name: 'Ergonomic Mouse',
-      price: 99,
-      rating: 5,
-      reviews: 256,
-      image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop',
-      badge: 'Hot'
-    },
-    {
-      id: 3,
-      name: 'Apple Smart Watch',
-      price: 199,
-      originalPrice: 249,
-      rating: 4.8,
-      reviews: 543,
-      image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&h=400&fit=crop',
-      badge: 'Sale',
-      discount: 20
-    },
-    {
-      id: 4,
-      name: 'Apple Wireless Earbuds',
-      price: 89,
-      rating: 4.7,
-      reviews: 432,
-      image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400&h=400&fit=crop'
-    }
-  ];
 
-  const bestSellingProducts: Product[] = [
-    {
-      id: 5,
-      name: 'Smart Home Cleaner',
-      price: 229,
-      rating: 4.5,
-      reviews: 890,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop',
-      badge: 'Hot'
-    },
-    {
-      id: 6,
-      name: 'Ergonomic Mouse',
-      price: 99,
-      rating: 5,
-      reviews: 1200,
-      image: 'https://images.unsplash.com/photo-1527814050087-3793815479db?w=400&h=400&fit=crop'
-    },
-    {
-      id: 7,
-      name: 'Home Theater',
-      price: 149,
-      originalPrice: 199,
-      rating: 4.9,
-      reviews: 765,
-      image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&h=400&fit=crop',
-      badge: 'Sale',
-      discount: 25
-    },
-    {
-      id: 8,
-      name: 'Apple Smart Watch',
-      price: 199,
-      rating: 4.8,
-      reviews: 980,
-      image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400&h=400&fit=crop'
-    },
-    {
-      id: 9,
-      name: 'Wireless Headphones',
-      price: 57,
-      originalPrice: 79,
-      rating: 4.6,
-      reviews: 654,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop',
-      discount: 28
-    },
-    {
-      id: 10,
-      name: 'Smart Pen for iPad',
-      price: 66,
-      rating: 4.4,
-      reviews: 432,
-      image: 'https://images.unsplash.com/photo-1625948515291-69613efd103f?w=400&h=400&fit=crop'
-    },
-    {
-      id: 11,
-      name: 'Security Camera',
-      price: 44,
-      rating: 4.7,
-      reviews: 890,
-      image: 'https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=400&h=400&fit=crop',
-      badge: 'New'
-    },
-    {
-      id: 12,
-      name: 'Smart watch white',
-      price: 47,
-      rating: 4.5,
-      reviews: 321,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop'
-    }
-  ];
+  const toggleFavorite = (id: string) => {
 
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
-    );
   };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-all-products');
+      console.log(response.data.data);
+      setLatestProducts(response.data.data);
+    } catch (error) {
+      toast.error("something went wrong")
+    }
+  }
+  const fetchBestSellingProducts = async () => {
+    try {
+      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-best-selling-products');
+      console.log(response.data.data);
+      setBestSellingProducts(response.data.data);
+    } catch (error) {
+      toast.error("something went wrong")
+    }
+  }
+
+  useEffect(() => {
+    fetchProducts();
+    fetchBestSellingProducts();
+  }, [])
+
 
   const getBadgeColor = (badge?: 'New' | 'Sale' | 'Hot') => {
     switch (badge) {
@@ -157,29 +98,30 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
     }
   };
 
-  const ProductCard = ({ product }: { product: Product }) => (
+  const ProductCard = ({ product }: { product: ExtendedProduct }) => (
     <Link href={`/product/${product.id}`}>
 
     <div className="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
       {/* Image Container */}
       <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-        <img 
+        {/* <img 
           src={product.image} 
-          alt={product.name}
+          alt={product.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        /> */}
         
         {/* Badge */}
-        {product.badge && (
+        {/* {product.badge && (
           <div className={`absolute top-4 left-4 px-3 py-1 ${getBadgeColor(product.badge)} text-white text-xs font-bold rounded-full shadow-lg`}>
             {product.badge}
           </div>
-        )}
+        )} */}
 
         {/* Discount Badge */}
-        {product.discount && (
+        { 
+        product.discount && (
           <div className="absolute top-4 right-4 w-12 h-12 bg-red-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
-            -{product.discount}%
+            -{calculateDiscountPrice(product.originalPrice, product.discountPrice)}%
           </div>
         )}
 
@@ -190,7 +132,7 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
               onClick={() => toggleFavorite(product.id)}
               className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
             >
-              <Heart className={`w-5 h-5 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} />
+              {/* <Heart className={`w-5 h-5 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-700'}`} /> */}
             </button>
             
             <button className="w-11 h-11 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
@@ -207,25 +149,30 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
       {/* Product Info */}
       <div className="p-5">
         <h3 className="font-semibold text-gray-900 text-base mb-2 line-clamp-1 group-hover:text-emerald-600 transition-colors">
-          {product.name}
+          {product.title}
         </h3>
         
         {/* Rating */}
         <div className="flex items-center space-x-2 mb-3">
           <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star 
-                key={i} 
-                className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-              />
-            ))}
+            {product && Array.from({ length: 5 }, (_, index) => {
+              const starNumber = index + 1;
+
+              if (product?.rating >= starNumber) {
+                return <Star key={index} className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+              } else if (product?.rating >= starNumber - 0.5) {
+                return <StarHalf key={index} className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+              } else {
+                return <Star key={index} className="w-5 h-5 text-gray-300" />;
+              }
+            })}
           </div>
-          <span className="text-sm text-gray-600">({product.reviews})</span>
+          <span className="text-sm text-gray-600">({product.totalReviews})</span>
         </div>
 
         {/* Price */}
         <div className="flex items-center space-x-3">
-          <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
+          <span className="text-2xl font-bold text-emerald-600">${product.discountPrice}</span>
           {product.originalPrice && (
             <span className="text-sm text-gray-400 line-through">${product.originalPrice}</span>
           )}
@@ -254,7 +201,7 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
             </h2>
             <div className="flex items-center justify-center space-x-3">
               <p className="text-gray-600">
-                Showing <span className="font-semibold text-emerald-600">4</span> of 72 products
+                Showing <span className="font-semibold text-emerald-600">{10}</span> of all products
               </p>
               <a href="/products" className="text-emerald-600 hover:text-emerald-700 font-semibold flex items-center">
                 View more →
