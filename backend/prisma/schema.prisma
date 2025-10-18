@@ -15,54 +15,54 @@ enum productStatus {
 }
 
 model User {
-  id           String         @id @default(uuid())
+  id           String  @id @default(uuid())
   name         String
-  email        String         @unique
+  email        String  @unique
   password     String
   avatarUrl    String?
   cover        String?
   phone        String?
   address      String?
-  points       Int            @default(0)
-  totalOrders  Int            @default(0)
-  totalReviews Int            @default(0)
-  designation  String         @default("New User")
+  points       Int     @default(0)
+  totalOrders  Int     @default(0)
+  totalReviews Int     @default(0)
+  designation  String  @default("New User")
 
   orders        Order[]
   reviews       Review[]
   wishList      WishList[]
   notifications Notification[]
+  cart          Cart?
 
-  createdAt    DateTime       @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Seller {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String
-  avatarUrl     String?
-  cover         String?
-  phone         String
-  address       String
-  rating        Float          @default(0.0)
-  totalRevenue  Int            @default(0)
-  totalOrders   Int            @default(0)
-  totalProducts Int            @default(0)
-  totalCustomers Int            @default(0)
-  totalReviews  Int            @default(0)
-  designation   String         @default("New Seller")
-  totalSolds    Int            @default(0)
-  lowStock      Int            @default(0)
-  description   String
+  id             String  @id @default(uuid())
+  name           String
+  email          String  @unique
+  password       String
+  avatarUrl      String?
+  cover          String?
+  phone          String
+  address        String
+  rating         Float   @default(0.0)
+  totalRevenue   Int     @default(0)
+  totalOrders    Int     @default(0)
+  totalProducts  Int     @default(0)
+  totalCustomers Int     @default(0)
+  totalReviews   Int     @default(0)
+  designation    String  @default("New Seller")
+  totalSolds     Int     @default(0)
+  lowStock       Int     @default(0)
+  description    String
 
   orders        Order[]
   products      Product[]
   reviews       Review[]
   notifications Notification[]
 
-
-  createdAt     DateTime       @default(now())
+  createdAt DateTime @default(now())
 }
 
 model WishList {
@@ -80,28 +80,50 @@ model Notification {
   message   String?
   createdAt DateTime @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
 
-  seller    Seller?  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  sellerId  String?
+  seller   Seller? @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sellerId String?
 }
 
+model Cart {
+  id        String     @id @default(uuid())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId    String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String
+
+  quantity  Int      @default(1) // user-specific quantity
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId]) // one product per cart row
+}
 
 model Order {
-  id          String        @id @default(uuid())
+  id String @id @default(uuid())
 
-  orderedBy   User          @relation(fields: [orderedById], references: [id], onDelete: Cascade)
+  orderedBy   User   @relation(fields: [orderedById], references: [id], onDelete: Cascade)
   orderedById String
 
-  sendBy      Seller        @relation(fields: [sendById], references: [id], onDelete: Cascade)
-  sendById    String
+  sendBy   Seller @relation(fields: [sendById], references: [id], onDelete: Cascade)
+  sendById String
 
-  product     Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
-  productId   String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String
 
-  quantity    Int
-  price       Int
+  quantity Int
+  price    Int
 
   status      productStatus @default(PROCESSING)
   createdAt   DateTime      @default(now())
@@ -115,43 +137,44 @@ model Order {
 model ProductImage {
   id        String   @id @default(cuid())
   url       String
-  publicId  String?      // cloudinary public_id
+  publicId  String?
   filename  String?
   mimeType  String?
   size      Int?
   createdAt DateTime @default(now())
 
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
 }
 
 model Specification {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   key       String
   value     String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
 }
 
 model Product {
-  id             String          @id @default(cuid())
-  title          String
-  description    String
-  category       String
-  originalPrice  Int
-  discountPrice  Int
-  quantity       Int
-  topPerforming  Boolean         @default(false)
-  status         productStatus   @default(PROCESSING)
-  views          Int             @default(0)
-  rating         Float           @default(0.0)
-  totalReviews   Int             @default(0)
-  totalSolds     Int             @default(0)
-  lowStock       Int             @default(0)
-  
+  id            String        @id @default(cuid())
+  title         String
+  description   String
+  category      String
+  originalPrice Int
+  discountPrice Int
+  quantity      Int
+  topPerforming Boolean       @default(false)
+  status        productStatus @default(PROCESSING)
+  views         Int           @default(0)
+  rating        Float         @default(0.0)
+  totalReviews  Int           @default(0)
+  totalSolds    Int           @default(0)
+  lowStock      Int           @default(0)
+
   // FIXED: Added seller relation
-  seller         Seller          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  sellerId       String
+  seller    Seller     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sellerId  String
+  cartItems CartItem[]
 
   // FIXED: Added back-references
   images         ProductImage[]
@@ -160,23 +183,23 @@ model Product {
   reviews        Review[]
   wishList       WishList[]
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Review {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId  String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
 
-  author     User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  authorId   String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId String?
 
-  seller     Seller?  @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  sellerId   String?
+  seller   Seller? @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  sellerId String?
 
-  rating     Int
-  comment    String?
-  createdAt  DateTime @default(now())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
 }

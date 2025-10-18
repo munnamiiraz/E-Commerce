@@ -327,3 +327,90 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json(new ApiError(500, "Failed to create order"));
   }
 };
+
+export const addToCart = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { productId, quantity = 1 } = req.body;
+    if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
+    if (!productId) return res.status(400).send(new ApiError(400, "productId required"));
+
+    const qty = Math.max(1, Number(quantity));
+
+    // fetch product (stock)
+    const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true, quantity: true } });
+    if (!product) return res.status(404).send(new ApiError(404, "Product not found"));
+    if (product.quantity < qty) return res.status(400).send(new ApiError(400, "Not enough stock"));
+
+    // ensure cart exists (userId unique on Cart)
+    let cart = await prisma.cart.findUnique({ where: { userId } });
+    if (!cart) cart = await prisma.cart.create({ data: { userId } });
+
+    // find existing cartItem
+    let item = await prisma.cartItem.findUnique({
+      where: { cartId_productId: { cartId: cart.id, productId } }
+    });
+
+    if (item) {
+      // increment quantity
+      const newQty = item.quantity + qty;
+      if (newQty > product.quantity) return res.status(400).send(new ApiError(400, "Exceeds stock"));
+      item = await prisma.cartItem.update({ where: { id: item.id }, data: { quantity: newQty } });
+      return res.status(200).json(new ApiResponse(200, item, "Cart updated"));
+    }
+
+    // create new cart item
+    const created = await prisma.cartItem.create({
+      data: { cartId: cart.id, productId, quantity: qty }
+    });
+    return res.status(201).json(new ApiResponse(201, created, "Added to cart"));
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
+
+
+export const deleteFromCart = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const productId = req.params.id; // DELETE /api/cart/:id  (productId)
+    if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
+    if (!productId) return res.status(400).send(new ApiError(400, "productId required"));
+
+    const cart = await prisma.cart.findUnique({ where: { userId } });
+    if (!cart) return res.status(404).send(new ApiError(404, "Cart not found"));
+
+    const item = await prisma.cartItem.findUnique({
+      where: { cartId_productId: { cartId: cart.id, productId } }
+    });
+    if (!item) return res.status(404).send(new ApiError(404, "Item not in cart"));
+
+    const deleted = await prisma.cartItem.delete({ where: { id: item.id } });
+    return res.status(200).json(new ApiResponse(200, deleted, "Removed from cart"));
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
+
+
+export const getCart = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
+
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: { product: true } // product has all necessary product fields
+        }
+      }
+    });
+    return res.status(200).json(new ApiResponse(200, cart || { items: [] }, "Cart fetched"));
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json(new ApiError(500, "Server error"));
+  }
+};
