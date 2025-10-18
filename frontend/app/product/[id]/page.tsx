@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { log } from 'node:console';
 
 interface IImage {
   publicId: string;
@@ -98,6 +99,27 @@ const ProductPage: React.FC = () => {
       setQuantity(prev => prev - 1);
     }
   };
+
+  const handleAddToCart = async() => {
+    try {
+      const token = localStorage.getItem('token');
+      if(!token) {
+        toast.error("Please login to add items to cart");
+        return;
+      }
+      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + `/api/user/add-to-cart`, {quantity, id}, {headers: {token}})
+      console.log(response);
+      if(response.data.success) {
+        toast.success("Item added to cart successfully");
+      } else {
+        toast.error("Something went wrong");
+      }
+    } catch (error) {
+      toast.error("Something went wrong");
+      console.log(error);
+    }
+    
+  }
 
   useEffect(() => {
     fetchProducts();
@@ -262,12 +284,13 @@ const ProductPage: React.FC = () => {
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="w-16 text-center font-bold text-lg">{quantity}</span>
-                  <button 
+                  {product && quantity <= product?.quantity && <button 
                     onClick={() => handleQuantityChange('increase')}
                     className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
+                  }
                 </div>
                 <span className="text-gray-600">
                   <span className="font-semibold text-emerald-600">{product?.quantity} items</span> left in stock
@@ -277,7 +300,9 @@ const ProductPage: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
-              <button className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2 group">
+              <button className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-2 group"
+                onClick={handleAddToCart}
+              >
                 <ShoppingCart className="w-6 h-6" />
                 <span>Add to Cart</span>
               </button>

@@ -330,8 +330,9 @@ export const placeOrder = async (req: AuthRequest, res: Response): Promise<void>
 
 export const addToCart = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
-    const { productId, quantity = 1 } = req.body;
+    const userId = req.user._id;
+    const { id, quantity = 1 } = req.body;
+    const productId = id;
     if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
     if (!productId) return res.status(400).send(new ApiError(400, "productId required"));
 
@@ -374,7 +375,8 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
 export const deleteFromCart = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const productId = req.params.id; // DELETE /api/cart/:id  (productId)
+    const { id } = req.body;
+    const productId = id;
     if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
     if (!productId) return res.status(400).send(new ApiError(400, "productId required"));
 
@@ -397,7 +399,7 @@ export const deleteFromCart = async (req: AuthRequest, res: Response) => {
 
 export const getCart = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?._id;
     if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));
 
     const cart = await prisma.cart.findUnique({
