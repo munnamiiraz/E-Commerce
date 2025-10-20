@@ -374,7 +374,7 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
 
 export const deleteFromCart = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user._id;
     const { id } = req.body;
     const productId = id;
     if (!userId) return res.status(401).send(new ApiError(401, "Unauthorized"));

@@ -309,7 +309,6 @@ export const getProductById = async (req: AuthRequest, res: Response): Promise<v
       where: { id },
       include: { images: true, specifications: true, reviews: true},
     });
-    console.log(products);
     
     res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
   } catch (err: any) {
@@ -321,9 +320,6 @@ export const getProductById = async (req: AuthRequest, res: Response): Promise<v
 export const getSellerInfo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user
-    // console.log(user);
-    
-    // console.log(user._id);
     
     const seller = await prisma.seller.findUnique({
       where: { id: user.id },
