@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import ToasterProvider from "../components/provider/ToasterProvider"
 
 import Providers from '../lib/provider';
-import { loadTokenFromLocalStorage } from "@/lib/features/auth/authSlice";
 
 
 const geistSans = Geist({

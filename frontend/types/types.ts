@@ -49,6 +49,20 @@ export interface LoginFormData {
   password: string;
 }
 
+export interface Specification {
+  key: string;
+  value: string;
+}
+export interface CartItem {
+  id: string;
+  cartId: string;
+  productId: string;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+  product: Product;
+}
+
 export interface SignupFormData {
   name: string;
   email: string;

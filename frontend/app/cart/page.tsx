@@ -17,37 +17,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { useGetCartQuery, useRemoveFromCartMutation, useUpdateCartItemMutation } from '@/lib/features/cart/cartApi';
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  originalPrice: number;
-  discountPrice: number;
-  quantity: number;
-  topPerforming: boolean;
-  status: string;
-  views: number;
-  rating: number;
-  totalReviews: number;
-  totalSolds: number;
-  lowStock: number;
-  sellerId: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Product, CartItem } from '@/types/types';
 
-interface CartItem {
-  id: string;
-  cartId: string;
-  productId: string;
-  quantity: number;
-  createdAt: string;
-  updatedAt: string;
-  product: Product;
-}
+
 
 interface CartPageProps {
   className?: string;
@@ -68,60 +42,47 @@ interface Response {
 
 const CartPage: React.FC<CartPageProps> = ({ className = '' }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'stripe'>('cod');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
+  const {data: cartItemsData, isLoading} = useGetCartQuery()
+  const [removeFromCart] = useRemoveFromCartMutation()
+  const [updateCartItem] = useUpdateCartItemMutation()
+
+  useEffect(() => {
+    if (cartItemsData) {
+      setCartItems(cartItemsData);
+    }
+  }, [cartItemsData]);
+
+  console.log(cartItems);
+  
   const shippingCost = 5;
   const discount = appliedCoupon ? 20 : 0;
 
   const updateQuantity = async (itemId: string, change: number) => {
-    const item = cartItems.find(i => i.id === itemId);
+    const item = cartItems?.find(i => i.id === itemId);
     if (!item) return;
 
     const newQuantity = Math.max(1, item.quantity + change);
     
-    // Optimistically update UI
-    setCartItems(items =>
-      items.map(i =>
-        i.id === itemId ? { ...i, quantity: newQuantity } : i
-      )
-    );
-
-    // TODO: Make API call to update quantity on backend
-    // try {
-    //   const token = localStorage.getItem('token');
-    //   await axios.put(
-    //     `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/update-cart-item`,
-    //     { itemId, quantity: newQuantity },
-    //     { headers: { token } }
-    //   );
-    // } catch (error) {
-    //   toast.error("Failed to update quantity");
-    //   // Revert on error
-    //   fetchCartItems();
-    // }
+    try {
+      await updateCartItem({ itemId, quantity: newQuantity }).unwrap();
+      toast.success("Quantity updated");
+    } catch (error) {
+      toast.error("Failed to update quantity");
+    }
   };
 
   const removeItem = async (itemId: string) => {
-    // Optimistically update UI
-    setCartItems(items => items.filter(item => item.id !== itemId));
-    
-    // TODO: Make API call to remove item from backend
-    const id = itemId;
-    console.log(id);
-    
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/remove-from-cart", {id}, {headers: {token}});
-      fetchCartItems();
+      await removeFromCart({ id: itemId }).unwrap();
       toast.success("Item removed from cart");
     } catch (error) {
       toast.error("Failed to remove item");
-      // Revert on error
-      fetchCartItems();
     }
   };
 
@@ -135,35 +96,8 @@ const CartPage: React.FC<CartPageProps> = ({ className = '' }) => {
     }
   };
 
-  const fetchCartItems = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error("Please login to view cart");
-        setLoading(false);
-        return;
-      }
-      
-      const response = await axios.get<Response>(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user/get-cart`,
-        { headers: { token } }
-      );
-      
-      if (response.data.success) {
-        setCartItems(response.data.data.items);
-      }
-    } catch (error) {
-      toast.error("Failed to fetch cart items");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  
 
-  useEffect(() => {
-    fetchCartItems();
-  }, []);
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + (item.product.discountPrice * item.quantity),
@@ -172,7 +106,7 @@ const CartPage: React.FC<CartPageProps> = ({ className = '' }) => {
 
   const total = subtotal + shippingCost - discount;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/30 py-8 ${className}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

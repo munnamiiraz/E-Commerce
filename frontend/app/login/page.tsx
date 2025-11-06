@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { Mail, Lock, User, Phone, Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react';
-import axios from "axios"
+
 import toast from "react-hot-toast"
 import { useRouter } from 'next/navigation';
 import {setUser, logout} from '@/lib/features/auth/authSlice'

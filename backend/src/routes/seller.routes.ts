@@ -15,7 +15,7 @@ router.get("/get-product", authSeller, getProduct as any)
 router.get("/get-seller-info", authSeller, getSellerInfo as any)
 // router.post("/place-order", authSeller, upload.array('images', 4), placeOrder as any)
 router.post("/add-product", authSeller, upload.array('images', 4), addProduct as any)
-router.get("/get-product/:id", authSeller, getProductById as any)
+router.get("/get-product/:id", getProductById as any)
 
 
 

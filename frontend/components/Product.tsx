@@ -4,7 +4,7 @@ import { Heart, ShoppingCart, Eye, Star, StarHalf, StarOff } from 'lucide-react'
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { calculateDiscountPrice } from '@/utils';
-import { useGetAllProductsQuery, useGetBestSellingProductsQuery } from '@/lib/features/baseApi';
+import { useGetAllProductsQuery, useGetBestSellingProductsQuery } from '@/lib/features/products/productsApi';
 
 import type { Product } from '@/types/types';
 import { div } from 'framer-motion/client';

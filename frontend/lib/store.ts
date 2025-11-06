@@ -23,7 +23,8 @@ export const store = configureStore({
     return getDefaultMiddleware({
       serializableCheck: false,
     }).concat(baseApi.middleware);
-  }
+  },
+  devTools: process.env.NODE_ENV !== 'production',
 });
 
 export type RootState = ReturnType<typeof store.getState>;

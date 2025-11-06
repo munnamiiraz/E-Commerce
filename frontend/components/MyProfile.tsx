@@ -27,14 +27,14 @@ import {images} from '../asset/asset.js'
 import { useRouter } from 'next/navigation';
 
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useGetProfileQuery } from '../lib/features/getProfile/getProfileApi';
+import { useGetUserProfileQuery } from '../lib/features/user/userApi';
 import { useSelector } from 'react-redux';
 
 
 const MyProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wishlist'>('overview');
   // const [data, setdata] = useState<data | null>(null);
-  const {data, isLoading, isError, error} = useGetProfileQuery()
+  const {data, isLoading, isError, error} = useGetUserProfileQuery()
   const router = useRouter()
 
   
