@@ -1,84 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useGetAllProductsQuery } from '@/lib/features/products/productsApi';
 
-interface Product {
-  id: number;
-  name: string;
-  image: string;
-  price: number;
-  originalPrice?: number;
-  rating: number;
-  reviewCount: number;
+import type { Product as ProductType } from '@/types/types';
+
+interface Product extends ProductType {
   badge?: 'New' | 'Hot' | 'Sale';
   discount?: string;
 }
 
 const ProductsPage: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        // TODO: Replace with your actual backend API endpoint
-        // const response = await axios.get('YOUR_API_ENDPOINT/products');
-        // setProducts(response.data);
-        
-        // Mock data for demonstration - Remove this when connecting to backend
-        const mockData: Product[] = [
-          {
-            id: 1,
-            name: 'Smart Home Cleaner',
-            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=500&fit=crop',
-            price: 229,
-            originalPrice: 299,
-            rating: 4,
-            reviewCount: 128,
-            badge: 'New',
-            discount: '-23%'
-          },
-          {
-            id: 2,
-            name: 'Ergonomic Mouse',
-            image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&h=500&fit=crop',
-            price: 99,
-            rating: 5,
-            reviewCount: 256,
-            badge: 'Hot'
-          },
-          {
-            id: 3,
-            name: 'Apple Smart Watch',
-            image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&h=500&fit=crop',
-            price: 199,
-            originalPrice: 249,
-            rating: 4,
-            reviewCount: 543,
-            badge: 'Sale',
-            discount: '-20%'
-          },
-          {
-            id: 4,
-            name: 'Apple Wireless Earbuds',
-            image: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=500&h=500&fit=crop',
-            price: 89,
-            rating: 4,
-            reviewCount: 432
-          }
-        ];
-        
-        setTimeout(() => {
-          setProducts(mockData);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  const { data: products = [], isLoading: loading } = useGetAllProductsQuery();
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -124,11 +55,9 @@ const ProductsPage: React.FC = () => {
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
               >
                 <div className="relative overflow-hidden group">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                  <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400 text-sm">Product Image</span>
+                  </div>
                   
                   {product.badge && (
                     <span
@@ -153,16 +82,16 @@ const ProductsPage: React.FC = () => {
                 
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
-                    {product.name}
+                    {product.title}
                   </h3>
                   
                   <div className="flex items-center gap-2 mb-3">
                     <div className="flex gap-0.5">{renderStars(product.rating)}</div>
-                    <span className="text-sm text-gray-500">({product.reviewCount})</span>
+                    <span className="text-sm text-gray-500">({product.totalReviews})</span>
                   </div>
                   
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl font-bold text-emerald-500">${product.price}</span>
+                    <span className="text-2xl font-bold text-emerald-500">${product.discountPrice}</span>
                     {product.originalPrice && (
                       <span className="text-lg text-gray-400 line-through">${product.originalPrice}</span>
                     )}

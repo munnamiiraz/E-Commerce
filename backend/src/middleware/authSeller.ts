@@ -15,10 +15,13 @@ const authUser = (req: Request, res: Response, next: NextFunction): void => {
     const tokenHeader: string | undefined = (req.headers['stoken']) as string;
     let token: string | null = null;
 
-    
-    if (tokenHeader) {
+    const possibleTokenHeader = req.headers["authorization"];
+
+    if (possibleTokenHeader && typeof possibleTokenHeader === 'string' && possibleTokenHeader.startsWith("Bearer ")) {
+      token = possibleTokenHeader.split(" ")[1];
+    } else if(tokenHeader) {
       token = tokenHeader;
-    } 
+    }
     
     // console.log("token form authSeller: ", token);
     if (!token) {

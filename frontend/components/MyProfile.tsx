@@ -22,89 +22,29 @@ import {
   Crown,
   Zap
 } from 'lucide-react';
-import axios from 'axios';
 import toast from "react-hot-toast"
 import {images} from '../asset/asset.js'
 import { useRouter } from 'next/navigation';
 
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  address: string | null;
-  avatarUrl: string | null;
-  coverUrl: string | null
-  cover: string | null;
-  points: number
-  totalOrders: number
-  totalReviews: number
-  designation: string
-  createdAt: Date
-}
+import { useGetUserProfileQuery } from '../lib/features/user/userApi';
+import { useSelector } from 'react-redux';
 
 
 const MyProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'wishlist'>('overview');
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  // const [data, setdata] = useState<data | null>(null);
+  const {data, isLoading, isError, error} = useGetUserProfileQuery()
   const router = useRouter()
 
-  const getUserData = async () => {
-    try {
-      console.log(token);
-      
-      if(!token) {
-        toast.error("Please login")
-        router.push("/login")
-        return
-      }
-      const data = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/get-profile", {headers: {token}})
-      const user: UserData = data.data.data
-      console.log(user);
-      
-      if(!user) {
-        toast.error("Something went wrong")
-        router.push("/")
-        return
-      }
-      setUserData(user)
-      console.log(user);
-      
-      setLoading(false)
-    } catch (error) {
-      toast.error("Something went wrong")
-      router.push("/")
-      return
-    }
-  }
-
-  const getToken = async () => {
-    try {
-      const token: string | null = await localStorage.getItem("token")
-      setToken(token)
-      // console.log(token);
-      
-    } catch{
-      toast.error("Something went wrong")
-      router.push("/")
-    }
-  }
+  
+  const {token, initialized } = useSelector((state: any) => state.auth)
 
   useEffect(() => {
-    getToken()
-  }, [])
-
-  useEffect(() => {
-    if (token) {
-      getUserData()
+    if(initialized && !token) {
+      router.push("/sign-in")
     }
-  }, [token])
-
+  }, [token, initialized])
 
 
   // Stats
@@ -263,7 +203,7 @@ const MyProfile: React.FC = () => {
               {/* Avatar */}
               <div className="relative group">
                 <div className="w-40 h-40 rounded-3xl overflow-hidden ring-8 ring-white shadow-2xl">
-                  <img src={userData?.avatarUrl ?? "/images/default-avatar.png"} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={data?.avatarUrl ?? "/images/default-avatar.png"} alt="Profile" className="w-full h-full object-cover" />
                 </div>
                 <button className="absolute bottom-2 right-2 w-12 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                   <Camera className="w-5 h-5 text-white" />
@@ -273,10 +213,10 @@ const MyProfile: React.FC = () => {
               {/* User Details */}
               <div className="flex-1 mt-6 md:mt-0">
                 <div className="flex mt-[100px] items-center space-x-3 mb-2">
-                  <h1 className="text-3xl font-bold text-gray-900">{userData?.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">{data?.name || "-"}</h1>
                   <div className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center space-x-1 shadow-lg">
                     <Crown className="w-4 h-4 text-white" />
-                    <span className="text-sm font-bold text-white">{userData?.designation}</span>
+                    <span className="text-sm font-bold text-white">{data?.designation}</span>
                   </div>
                 </div>
                 
@@ -287,7 +227,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Email</p>
-                      <p className="text-sm font-medium">{userData?.email}</p>
+                      <p className="text-sm font-medium">{data?.email}</p>
                     </div>
                   </div>
                   
@@ -297,7 +237,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Phone</p>
-                      <p className="text-sm font-medium">{userData?.phone || 'Set Phone Number'}</p>
+                      <p className="text-sm font-medium">{data?.phone || 'Set Phone Number'}</p>
                     </div>
                   </div>
                   
@@ -307,7 +247,7 @@ const MyProfile: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Location</p>
-                      <p className="text-sm font-medium">{userData?.address || 'Set Location'}</p>
+                      <p className="text-sm font-medium">{data?.address || 'Set Location'}</p>
                     </div>
                   </div>
                 </div>
@@ -319,9 +259,9 @@ const MyProfile: React.FC = () => {
                   <Zap className="w-5 h-5" />
                   <p className="text-sm opacity-90">Reward Points</p>
                 </div>
-                <p className="text-4xl font-bold">{userData?.points}</p>
+                <p className="text-4xl font-bold">{data?.points}</p>
                 
-                {/* <p className="text-xs opacity-75 mt-1">Member since {userData?.createdAt?. || 'N/A'}</p> */}
+                {/* <p className="text-xs opacity-75 mt-1">Member since {data?.createdAt?. || 'N/A'}</p> */}
               </div>
             </div>
           </div>
@@ -339,7 +279,7 @@ const MyProfile: React.FC = () => {
                   {stat.change}
                 </span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-1">{userData?.totalOrders}</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-1">{data?.totalOrders}</h3>
               <p className="text-gray-600 text-sm">{stat.label}</p>
             </div>
           ))}

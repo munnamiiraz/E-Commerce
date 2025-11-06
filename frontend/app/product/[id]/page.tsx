@@ -21,44 +21,18 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+
 import { log } from 'node:console';
+
+import type { Product, Specification } from '@/types/types';
+import { useGetProductByIdQuery } from '@/lib/features/products/productsApi';
+import { useSelector } from 'react-redux';
+import { useAddToCartMutation } from '@/lib/features/cart/cartApi';
+
 
 interface IImage {
   publicId: string;
   url: string;
-}
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  name: string;
-  date: string;
-}
-interface Specification {
-  key: string;
-  value: string;
-}
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  price: number;
-  quantity: number
-  originalPrice: number;
-  discountPrice: number;
-  lowStock: number;
-  sold: number;
-  image: IImage[];
-  rating: number;
-  totalSolds: number;
-  totalReviews: number;
-  topPerforming: boolean;
-  reviews: Review[];
-  specifications: Specification[];
-  status: 'active' | 'draft' | 'out-of-stock';
 }
 
 const ProductPage: React.FC = () => {
@@ -66,9 +40,14 @@ const ProductPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews' | 'specifications'>('description');
-  const [product, setProduct] = useState<Product | null>(null);
-  
   const {id} = useParams();
+  const {data: product, isLoading, isError, error} = useGetProductByIdQuery(id as string)
+  
+  const [addToCart, {isLoading: isAddingToCart, isSuccess: isAddToCartSuccess, isError: isAddToCartError, error: addToCartError}] = useAddToCartMutation()
+
+  const {token} = useSelector((state: any) => state.auth)
+  console.log(product);
+  
 
   const images = [
     'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop',
@@ -77,19 +56,6 @@ const ProductPage: React.FC = () => {
     'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&h=800&fit=crop'
   ];
 
-  // const reviews = [];
-
-  const fetchProducts = async () => {
-    const stoken = localStorage.getItem('stoken');
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + `/api/seller/get-product/${id}`, {headers: {stoken}});
-      console.log(response.data.data[0]);
-      setProduct(response.data.data[0]);
-
-    } catch (error) {
-      toast.error("something went wrong")
-    }
-  }
 
 
   const handleQuantityChange = (type: 'increase' | 'decrease') => {
@@ -100,30 +66,19 @@ const ProductPage: React.FC = () => {
     }
   };
 
-  const handleAddToCart = async() => {
-    try {
-      const token = localStorage.getItem('token');
-      if(!token) {
-        toast.error("Please login to add items to cart");
-        return;
-      }
-      const response = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + `/api/user/add-to-cart`, {quantity, id}, {headers: {token}})
-      console.log(response);
-      if(response.data.success) {
-        toast.success("Item added to cart successfully");
-      } else {
-        toast.error("Something went wrong");
-      }
-    } catch (error) {
-      toast.error("Something went wrong");
-      console.log(error);
+  const handleAddToCart = async () => {
+    if (!token) {
+      toast.error('Please login to add items to cart');
+      return;
     }
     
-  }
-
-  useEffect(() => {
-    fetchProducts();
-  }, [])
+    try {
+      await addToCart({ id: id as string, quantity }).unwrap();
+      toast.success('Item added to cart!');
+    } catch (error) {
+      toast.error('Failed to add item to cart');
+    }
+  };
 
 
   return (
@@ -284,7 +239,7 @@ const ProductPage: React.FC = () => {
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="w-16 text-center font-bold text-lg">{quantity}</span>
-                  {product && quantity <= product?.quantity && <button 
+                  {product && quantity < product?.quantity && <button 
                     onClick={() => handleQuantityChange('increase')}
                     className="w-12 h-12 flex items-center justify-center hover:bg-gray-100 transition-colors"
                   >
@@ -392,7 +347,7 @@ const ProductPage: React.FC = () => {
 
             {activeTab === 'specifications' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {product?.specifications?.map((spec, idx) => (
+                {product?.specifications?.map((spec: Specification, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <span className="font-semibold text-gray-700">{spec.key}</span>
                     <span className="text-gray-900">{spec.value}</span>

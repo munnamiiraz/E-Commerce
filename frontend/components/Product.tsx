@@ -2,45 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { Heart, ShoppingCart, Eye, Star, StarHalf, StarOff } from 'lucide-react';
 import Link from 'next/link';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { calculateDiscountPrice } from '@/utils';
+import { useGetAllProductsQuery, useGetBestSellingProductsQuery } from '@/lib/features/products/productsApi';
 
-interface IImage {
-  publicId: string;
-  url: string;
-}
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  name: string;
-  date: string;
-}
-interface Specification {
-  key: string;
-  value: string;
-}
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  price: number;
-  quantity: number
-  originalPrice: number;
-  discountPrice: number;
-  lowStock: number;
-  sold: number;
-  image: IImage[];
-  rating: number;
-  totalSolds: number;
-  totalReviews: number;
-  topPerforming: boolean;
-  reviews: Review[];
-  specifications: Specification[];
-  status: 'active' | 'draft' | 'out-of-stock';
-}
+import type { Product } from '@/types/types';
+import { div } from 'framer-motion/client';
 
 interface ExtendedProduct extends Product {
   badge?: 'New' | 'Sale' | 'Hot';
@@ -52,6 +19,8 @@ interface ProductCardsProps {
 }
 
 const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
+  const {data: latestProductsData, isLoading: latestProductsLoading} = useGetAllProductsQuery();
+  const {data: bestSellingData, isLoading: bestSellingLoading} = useGetBestSellingProductsQuery()
   const [latestProducts, setLatestProducts] = useState<Product[]>([]);
   const [bestSellingProducts, setBestSellingProducts] = useState<Product[]>([]);
 
@@ -60,29 +29,17 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
 
   };
 
-  const fetchProducts = async () => {
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-all-products');
-      console.log(response.data.data);
-      setLatestProducts(response.data.data);
-    } catch (error) {
-      toast.error("something went wrong")
+  useEffect(() => {
+    if(latestProductsData) {
+      setLatestProducts(latestProductsData);
     }
-  }
-  const fetchBestSellingProducts = async () => {
-    try {
-      const response = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + '/api/seller/get-best-selling-products');
-      console.log(response.data.data);
-      setBestSellingProducts(response.data.data);
-    } catch (error) {
-      toast.error("something went wrong")
-    }
-  }
+  }, [latestProductsData])
 
   useEffect(() => {
-    fetchProducts();
-    fetchBestSellingProducts();
-  }, [])
+    if(bestSellingData) {
+      setBestSellingProducts(bestSellingData);
+    }
+  }, [bestSellingData])
 
 
   const getBadgeColor = (badge?: 'New' | 'Sale' | 'Hot') => {
@@ -188,6 +145,38 @@ const ProductCards: React.FC<ProductCardsProps> = ({ className = '' }) => {
     </div>
     </Link>
   );
+
+  if (latestProductsLoading) {
+    return (
+      <div className='ml-[200px] mr-[200px]'>
+        <div className="text-center mb-10 mt-[30px]">
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+              Latest Products
+            </h2>
+            <div className="flex items-center justify-center space-x-3">
+              <p className="text-gray-600">
+                Showing <span className="font-semibold text-emerald-600">{10}</span> of all products
+              </p>
+              <a href="/products" className="text-emerald-600 hover:text-emerald-700 font-semibold flex items-center">
+                View more →
+              </a>
+            </div>
+            <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-teal-500 mx-auto mt-4 rounded-full"></div>
+          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="animate-pulse space-y-3 bg-white p-3 rounded-xl shadow-sm">
+              <div className="w-full h-48 bg-gray-200 rounded-xl" />
+              <div className="h-4 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 rounded w-1/2" />
+              <div className="h-10 bg-gray-200 rounded-xl" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
 
   return (
     <div className={`bg-gradient-to-br from-gray-50 to-gray-100 py-16 ${className}`}>
