@@ -5,18 +5,18 @@ export const cartApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCart: builder.query<CartItem[], void>({
       query: () => ({
-        url: "/get-cart",
+        url: "/api/user/get-cart",
         method: "GET",
         headers: {
           token: `${localStorage.getItem("token")}`,
         },
       }),
-      transformResponse: (response: any) => response.data,
+      transformResponse: (response: any) => response.data.items,
       providesTags: ['Cart']
     }),
     addToCart: builder.mutation<void, { id: string, quantity: number }>({
       query: (body) => ({
-        url: "/add-to-cart",
+        url: "/api/user/add-to-cart",
         method: "POST",
         body,
         headers: {

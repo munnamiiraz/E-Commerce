@@ -56,6 +56,8 @@ const CartPage: React.FC<CartPageProps> = ({ className = '' }) => {
     if (cartItemsData) {
       setCartItems(cartItemsData);
     }
+    console.log(cartItemsData);
+    
   }, [cartItemsData]);
 
   console.log(cartItems);
@@ -99,7 +101,7 @@ const CartPage: React.FC<CartPageProps> = ({ className = '' }) => {
   
 
 
-  const subtotal = cartItems.reduce(
+  const subtotal = (cartItems ?? []).reduce(
     (sum, item) => sum + (item.product.discountPrice * item.quantity),
     0
   );
