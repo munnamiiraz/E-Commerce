@@ -4,22 +4,14 @@ import { Mail, Lock, User, Phone, Eye, EyeOff, Loader2, ShoppingBag } from 'luci
 import axios from "axios"
 import toast from "react-hot-toast"
 import { useRouter } from 'next/navigation';
+import {setUser, logout} from '@/lib/features/auth/authSlice'
 
 
 
 type AuthMode = 'login' | 'signup';
-
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
-interface SignupFormData {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import type { LoginFormData, SignupFormData } from '@/types/types';
+import { useSignInMutation, useSignUpMutation } from '@/lib/features/auth/authApi';
+import { useDispatch, useSelector } from 'react-redux';
 
 const LoginSignupPage: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -27,7 +19,14 @@ const LoginSignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
+  const [signIn, {data: loginDataResponse, isLoading: loginLoading, error: loginError}] = useSignInMutation()
+  const [signUp, {data: signupDataResponse, isLoading: signupLoading, error: signupError}] = useSignUpMutation()
+
+  const {user, token} = useSelector((state: any) => state.auth)
+  
+
   const router = useRouter()
+  const dispatch = useDispatch();
 
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: '',
@@ -58,25 +57,17 @@ const LoginSignupPage: React.FC = () => {
   };
 
   const handleLoginSubmit = async () => {
-    setLoading(true);
     try {
-      const user = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/sign-in", loginData);
-      if(user.data.success) {
-        toast.success("Login successfully")
-        localStorage.setItem("token", user.data.data.token)
-        
-      
-        router.push('/')
-      } else {
-        toast.error("Something went wrong")
-      }
-      setLoading(false);
-      console.log(user.data);
+      const result = await signIn(loginData).unwrap()
+      dispatch(setUser(result))
+      localStorage.setItem("token", result.token)
+      router.push("/")
+      toast.success("Logged in successfully")
 
     } catch (error) {
       toast.error("Something went wrong")
+      // dispatch(logout())
       console.log(error);
-      setLoading(false)
     }
   };
 
@@ -93,31 +84,23 @@ const LoginSignupPage: React.FC = () => {
         email: signupData.email,
         password: signupData.password
       }
-      // console.log(signupDataNew);
-      // console.log(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/sign-up");
       
-      const user = await axios.post(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/sign-up", signupDataNew);
-      console.log(user.data);
-      if(user.data.success) {
-        toast.success("Account created successfully!");
-        setLoading(false);
-        setMode('login');
-      } else {
-        toast.error("something went wrong!");
-        setLoading(false);
-      }
-      
-    } catch (error: unknown) {
+      const result = await signUp(signupDataNew).unwrap()
+      console.log(result);
+      toast.success("Account created successfully. Please log in.");
       setLoading(false);
-      if (axios.isAxiosError(error)) {
-        // check if backend sent a message
-        console.error(error.response?.data?.message || "Something went wrong");
-        // alert(error.response?.data?.message || "Something went wrong");
-        toast.error((error.response?.data?.message || "Something went wrong"))
+      
+      
+    } catch (error: any) {
+      console.log(signupError);
+      if('data' in error && 'message' in error.data) {
+        toast.error(error.data.message)
       } else {
         toast.error("Something went wrong")
-        console.error(error);
       }
+      
+      setLoading(false)
+      
     }
   };
 

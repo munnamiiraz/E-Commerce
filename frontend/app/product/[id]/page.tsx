@@ -24,42 +24,19 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { log } from 'node:console';
 
+import type { Product } from '@/types/types';
+
+
 interface IImage {
   publicId: string;
   url: string;
 }
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  name: string;
-  date: string;
-}
+
 interface Specification {
   key: string;
   value: string;
 }
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  price: number;
-  quantity: number
-  originalPrice: number;
-  discountPrice: number;
-  lowStock: number;
-  sold: number;
-  image: IImage[];
-  rating: number;
-  totalSolds: number;
-  totalReviews: number;
-  topPerforming: boolean;
-  reviews: Review[];
-  specifications: Specification[];
-  status: 'active' | 'draft' | 'out-of-stock';
-}
 
 const ProductPage: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState(0);

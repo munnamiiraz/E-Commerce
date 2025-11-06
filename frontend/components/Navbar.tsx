@@ -18,13 +18,12 @@ import {
   Store,
   ChevronDown
 } from 'lucide-react';
-import axios from "axios"
 
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-
-
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '@/lib/features/auth/authSlice';
 
 
 interface NavLinkProps {
@@ -50,7 +49,6 @@ interface IUser {
 
 const Navbar: React.FC = () => {
   const [activeLink, setActiveLink] = useState<string>('Shop');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [user, setUser] = useState<IUser | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
@@ -58,6 +56,10 @@ const Navbar: React.FC = () => {
   const [cartCount] = useState<number>(3);
   const [notificationCount] = useState<number>(5);
   const [messageCount] = useState<number>(2);
+
+  const dispatch = useDispatch();
+  const {token, user: userData} = useSelector((state: any) => state.auth)
+
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -70,8 +72,6 @@ const Navbar: React.FC = () => {
     { name: 'Seller', href: '/seller' },
     { name: 'Admin', href: '/admin' },
   ];
-
-
 
   const profileMenuItems = [
     { icon: UserCircle, label: 'My Profile', href: '/my-profile'},
@@ -94,6 +94,7 @@ const Navbar: React.FC = () => {
 
   const signOutHandeler = () => {
     localStorage.removeItem('token')
+    dispatch(logout())
   }
 
   const handleLinkClick = (link: string): void => {
@@ -106,29 +107,6 @@ const Navbar: React.FC = () => {
   const handleCartHandeler = () => {
     router.push('/cart');
   }
-
-  useEffect(() => {
-    const token: string | null = localStorage.getItem('token');
-    console.log(token);
-
-    const getUserData = async () => {
-      if (token) {
-        setIsLoggedIn(true);
-        
-        try {
-          const data = await axios.get(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/user/get-profile", {headers: {token}})
-          setUser(data.data.data)
-        } catch (error) {
-          toast.error("something went wrong")
-          console.log(error);
-          
-        }
-      } else {
-        setIsLoggedIn(false);
-      }
-    }
-    getUserData();
-  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -144,7 +122,15 @@ const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  console.log(user);
+
+  useEffect(() => {
+    if (token) {
+      setUser(userData)
+      console.log(userData);
+    } else {
+    }
+  }, [token]);
+    
   
 
   return (
@@ -272,7 +258,7 @@ const Navbar: React.FC = () => {
             </button>
 
             {/* User Profile / Sign In */}
-            {isLoggedIn ? (
+            {token ? (
               <div ref={profileRef} className="relative">
                 <button 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -352,7 +338,7 @@ const Navbar: React.FC = () => {
         <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
           <div className="px-4 py-4 space-y-3">
             {/* Mobile User Info */}
-            {isLoggedIn && (
+            {token && (
               <div className="flex items-center space-x-3 p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl text-white mb-4">
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-bold">
                   {user?.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
